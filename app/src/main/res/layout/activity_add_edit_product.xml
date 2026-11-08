@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+            <FrameLayout android:layout_width="match_parent" android:layout_height="140dp">
+                <TextView android:id="@+id/imgText" style="@style/Placeholder" android:textSize="48sp"
+                    android:layout_width="match_parent" android:layout_height="match_parent" />
+                <ImageView android:id="@+id/img" android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:contentDescription="Ảnh món" android:scaleType="centerCrop" android:visibility="gone" />
+            </FrameLayout>
+    <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilImage"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="8dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Link ảnh món (dán URL ảnh)">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtImage"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilName"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="8dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Tên món">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtName"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilDesc"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="8dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Mô tả">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtDesc"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" />
+    </com.google.android.material.textfield.TextInputLayout>
+            <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:text="Danh mục" />
+            <Spinner android:id="@+id/spCategory" android:layout_width="match_parent" android:layout_height="48dp"
+                android:background="@drawable/bg_card" />
+            <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:text="Giá theo size (để trống nếu không bán size đó)" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilS"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Size S">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtS"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilM"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginStart="6dp"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Size M">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtM"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilL"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginStart="6dp"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Size L">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtL"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+            <CheckBox android:id="@+id/cbNew" android:layout_width="wrap_content" android:layout_height="48dp"
+                android:layout_marginTop="8dp" android:text="Đánh dấu là món mới" />
+        </LinearLayout>
+    </ScrollView>
+    <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="56dp"
+        android:layout_margin="12dp" android:text="Lưu món" android:textSize="16sp" />
+</LinearLayout>

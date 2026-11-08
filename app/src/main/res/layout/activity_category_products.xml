@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <RadioGroup android:id="@+id/rgSort" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:paddingStart="12dp" android:paddingTop="8dp" android:paddingEnd="12dp">
+        <RadioButton android:id="@+id/rbAll" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Tất cả" />
+        <RadioButton android:id="@+id/rbBest" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bán chạy" />
+        <RadioButton android:id="@+id/rbCheap" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Giá thấp" />
+    </RadioGroup>
+    <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:padding="24dp" android:text="Danh mục chưa có món" android:visibility="gone" />
+    <!-- GridView: lưới món 2 cột -->
+    <GridView android:id="@+id/gridView" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:clipToPadding="false" android:horizontalSpacing="8dp" android:numColumns="2"
+        android:padding="12dp" android:stretchMode="columnWidth" android:verticalSpacing="8dp" />
+</LinearLayout>

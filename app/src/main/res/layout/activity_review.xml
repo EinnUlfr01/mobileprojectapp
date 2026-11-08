@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_horizontal" android:orientation="vertical" android:padding="20dp">
+        <TextView android:id="@+id/tvProduct" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="@color/ink" android:textSize="20sp" android:textStyle="bold" />
+        <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:text="Bạn thấy món này thế nào?" />
+        <RatingBar android:id="@+id/ratingBar" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:numStars="5" android:progressTint="@color/star" android:rating="5" android:stepSize="1" />
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilComment"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="10dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Nhận xét của bạn">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtComment"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="4" android:gravity="top" />
+            </com.google.android.material.textfield.TextInputLayout>
+        <Button android:id="@+id/btnSend" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="20dp" android:text="Gửi đánh giá" />
+    </LinearLayout>
+</LinearLayout>

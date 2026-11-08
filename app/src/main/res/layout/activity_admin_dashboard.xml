@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/primary" android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Quản trị viên" android:textColor="@color/white" android:textSize="13sp" />
+            <TextView android:id="@+id/tvName" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="@color/white" android:textSize="20sp" android:textStyle="bold" />
+        </LinearLayout>
+        <Button android:id="@+id/btnLogout" style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content" android:layout_height="44dp" android:text="Đăng xuất"
+            android:textColor="@color/white" app:strokeColor="@color/white" />
+    </LinearLayout>
+    <!-- GridView: 4 ô thống kê + 4 nút quản lý (lưới 2 cột) -->
+    <GridView android:id="@+id/gridView" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:clipToPadding="false" android:horizontalSpacing="10dp" android:numColumns="2"
+        android:padding="14dp" android:stretchMode="columnWidth" android:verticalSpacing="10dp" />
+</LinearLayout>

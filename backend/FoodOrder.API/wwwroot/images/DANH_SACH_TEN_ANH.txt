@@ -1,0 +1,23 @@
+Chép ảnh món ăn vào thư mục này, đặt tên file đúng như danh sách bên dưới (đuôi .jpg, .png hoặc .webp đều được).
+Xong thì tắt API (Ctrl + C) và chạy lại dotnet run, API tự gắn ảnh cho món chưa có ảnh.
+Món thêm sau: tên file = tên món bỏ dấu, nối bằng gạch ngang.
+
+com.jpg   <- Cơm
+bun-pho.jpg   <- Bún/Phở
+tra-sua.jpg   <- Trà sữa
+an-nhanh.jpg   <- Ăn nhanh
+trang-mieng.jpg   <- Tráng miệng
+com-tam-suon-bi-cha.jpg   <- Cơm tấm sườn bì chả
+com-ga-xoi-mo.jpg   <- Cơm gà xối mỡ
+com-chien-duong-chau.jpg   <- Cơm chiên dương châu
+pho-bo-tai-nam.jpg   <- Phở bò tái nạm
+bun-bo-hue.jpg   <- Bún bò Huế
+bun-thit-nuong.jpg   <- Bún thịt nướng
+tra-sua-tran-chau-duong-den.jpg   <- Trà sữa trân châu đường đen
+tra-dao-cam-sa.jpg   <- Trà đào cam sả
+tra-sua-matcha.jpg   <- Trà sữa matcha
+ga-ran-sot-cay.jpg   <- Gà rán sốt cay
+hamburger-bo-pho-mai.jpg   <- Hamburger bò phô mai
+khoai-tay-chien.jpg   <- Khoai tây chiên
+che-khuc-bach.jpg   <- Chè khúc bạch
+banh-flan-caramel.jpg   <- Bánh flan caramel

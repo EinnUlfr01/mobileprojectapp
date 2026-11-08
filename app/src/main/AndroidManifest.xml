@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".FoodApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DoAnAppGiaodoan"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- A. Nhóm chung -->
+        <activity android:name=".ui.auth.SplashActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".ui.auth.LoginActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.auth.RegisterActivity" android:windowSoftInputMode="adjustResize" />
+
+        <!-- B. Nhóm User (dùng chung cho khách vãng lai) -->
+        <activity android:name=".MainActivity" />
+        <activity android:name=".ui.user.SearchActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.user.CategoryProductsActivity" />
+        <activity android:name=".ui.user.ProductDetailActivity" />
+        <activity android:name=".ui.user.CartActivity" />
+        <activity android:name=".ui.user.CheckoutActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.user.OrderSuccessActivity" />
+        <activity android:name=".ui.user.OrderHistoryActivity" />
+        <activity android:name=".ui.user.OrderDetailActivity" />
+        <activity android:name=".ui.user.ReviewActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.user.ProfileActivity" android:windowSoftInputMode="adjustResize" />
+
+        <!-- C. Nhóm Admin -->
+        <activity android:name=".ui.admin.AdminDashboardActivity" />
+        <activity android:name=".ui.admin.ManageUsersActivity" />
+        <activity android:name=".ui.admin.ManageCategoriesActivity" />
+        <activity android:name=".ui.admin.ManageProductsActivity" />
+        <activity android:name=".ui.admin.AddEditProductActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.admin.ManageOrdersActivity" />
+    </application>
+
+</manifest>

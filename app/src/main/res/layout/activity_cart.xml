@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <LinearLayout android:id="@+id/emptyView" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:gravity="center" android:orientation="vertical" android:visibility="gone">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🛒" android:textSize="56sp" />
+        <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="Giỏ hàng đang trống" android:textSize="15sp" />
+        <Button android:id="@+id/btnShop" android:layout_width="wrap_content" android:layout_height="52dp"
+            android:layout_marginTop="16dp" android:text="Mua sắm ngay" />
+    </LinearLayout>
+    <!-- RecyclerView: món trong giỏ, có nút +/− và xóa -->
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvCart" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:padding="12dp" />
+    <LinearLayout android:id="@+id/summary" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/white" android:elevation="6dp" android:orientation="vertical" android:padding="16dp">
+        <TextView android:id="@+id/tvStats" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="Tạm tính" android:textColor="@color/ink" android:textSize="16sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tvSubtotal" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="@color/primary" android:textSize="18sp" android:textStyle="bold" />
+        </LinearLayout>
+        <Button android:id="@+id/btnCheckout" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="10dp" android:text="Đặt hàng" android:textSize="16sp" />
+    </LinearLayout>
+</LinearLayout>

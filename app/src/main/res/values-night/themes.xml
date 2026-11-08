@@ -1,0 +1,12 @@
+<resources>
+    <style name="Base.Theme.DoAnAppGiaodoan" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/primary_light</item>
+        <item name="colorOnPrimaryContainer">@color/primary_dark</item>
+        <item name="colorSecondary">@color/primary</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

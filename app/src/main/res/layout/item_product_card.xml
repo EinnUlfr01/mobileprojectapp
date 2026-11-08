@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thẻ món: dùng cho RecyclerView ngang (Bán chạy) và GridView (món theo danh mục) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card" android:layout_width="160dp" android:layout_height="wrap_content"
+    android:layout_margin="4dp" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="8dp">
+    <FrameLayout android:layout_width="match_parent" android:layout_height="104dp">
+        <TextView android:id="@+id/imgText" style="@style/Placeholder"
+            android:layout_width="match_parent" android:layout_height="match_parent" />
+        <ImageView android:id="@+id/img" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:contentDescription="Ảnh món" android:scaleType="centerCrop" android:visibility="gone" />
+        <TextView android:id="@+id/tvNew" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_margin="4dp" android:background="@drawable/bg_badge" android:paddingStart="8dp" android:paddingEnd="8dp"
+            android:text="Mới" android:textColor="@color/primary_dark" android:textSize="11sp" android:visibility="gone" />
+    </FrameLayout>
+    <TextView android:id="@+id/tvName" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="6dp" android:maxLines="2" android:minLines="2"
+        android:textColor="@color/ink" android:textSize="14sp" android:textStyle="bold" />
+    <TextView android:id="@+id/tvPrice" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textColor="@color/primary" android:textSize="14sp" android:textStyle="bold" />
+    <TextView android:id="@+id/tvRating" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textColor="@color/star" android:textSize="12sp" />
+</LinearLayout>

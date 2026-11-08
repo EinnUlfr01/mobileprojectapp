@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
+            <TextView android:id="@+id/tvGuestNote" style="@style/Muted" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="Không cần tài khoản, chỉ cần tên, số điện thoại và địa chỉ." android:visibility="gone" />
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilName"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="10dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Họ và tên người nhận">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtName"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPersonName" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilPhone"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="10dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Số điện thoại">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtPhone"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="phone" android:maxLength="10" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilAddress"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="10dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Địa chỉ giao hàng">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtAddress"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPostalAddress" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilNote"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="10dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Ghi chú (không bắt buộc)">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtNote"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:text="Món đã chọn" />
+            <LinearLayout android:id="@+id/llItems" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="6dp" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="12dp" />
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:text="Phương thức thanh toán" />
+            <RadioGroup android:id="@+id/rgPayment" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="6dp" android:background="@drawable/bg_card" android:padding="8dp" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="12dp">
+                <TextView android:id="@+id/tvSubtotal" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/ink" />
+                <TextView android:id="@+id/tvShip" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/ink" />
+                <TextView android:id="@+id/tvTotal" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" android:textColor="@color/primary" android:textSize="18sp" android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+    <Button android:id="@+id/btnConfirm" android:layout_width="match_parent" android:layout_height="56dp"
+        android:layout_margin="12dp" android:text="Xác nhận đặt hàng" android:textSize="16sp" />
+</LinearLayout>

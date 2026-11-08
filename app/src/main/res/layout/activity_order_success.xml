@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_horizontal" android:orientation="vertical" android:padding="24dp">
+        <TextView android:layout_width="88dp" android:layout_height="88dp" android:layout_marginTop="40dp"
+            android:background="@drawable/bg_badge" android:gravity="center" android:text="✓"
+            android:textColor="@color/primary" android:textSize="44sp" android:textStyle="bold" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp"
+            android:text="Đặt hàng thành công" android:textColor="@color/ink" android:textSize="22sp" android:textStyle="bold" />
+        <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:gravity="center" android:text="Quán sẽ gọi xác nhận qua số điện thoại bạn đã nhập" />
+        <TextView android:id="@+id/tvInfo" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:background="@drawable/bg_card" android:lineSpacingExtra="4dp"
+            android:padding="16dp" android:textColor="@color/ink" android:textSize="15sp" />
+        <LinearLayout android:id="@+id/registerBox" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:background="@drawable/bg_badge" android:orientation="vertical" android:padding="16dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Tạo tài khoản bằng số điện thoại này?" android:textColor="@color/ink" android:textStyle="bold" />
+            <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Để xem lại đơn, theo dõi giao hàng và đánh giá món" />
+            <Button android:id="@+id/btnRegister" android:layout_width="match_parent" android:layout_height="52dp"
+                android:layout_marginTop="8dp" android:text="Đăng ký ngay" />
+        </LinearLayout>
+        <Button android:id="@+id/btnHome" style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp" android:text="Về trang chủ" />
+    </LinearLayout>
+</ScrollView>

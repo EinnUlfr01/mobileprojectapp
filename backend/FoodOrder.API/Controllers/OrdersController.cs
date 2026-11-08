@@ -1,0 +1,143 @@
+using FoodOrder.API.Common;
+using FoodOrder.API.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace FoodOrder.API.Controllers;
+
+[ApiController]
+[Route("api/orders")]
+public class OrdersController(AppDbContext db) : ControllerBase
+{
+    public const decimal ShippingFee = 15000;
+    private static readonly string[] PaymentMethods = { "Tiền mặt", "MoMo", "ZaloPay", "VNPay" };
+
+    // CheckoutActivity + GuestCheckoutActivity
+    // - User đã đăng nhập: không gửi Items -> lấy từ giỏ hàng trên server rồi xóa giỏ
+    // - Khách vãng lai: gửi Items lấy từ giỏ trên máy, chỉ cần tên + SĐT + địa chỉ
+    [HttpPost]
+    [AllowAnonymous]
+    public async Task<ActionResult<OrderDto>> Create(CreateOrderRequest r)
+    {
+        if (string.IsNullOrWhiteSpace(r.ReceiverName)) return BadRequest(new MessageDto("Vui lòng nhập tên người nhận"));
+        if (!Mapping.IsValidPhone(r.Phone)) return BadRequest(new MessageDto("Số điện thoại phải đủ 10 số"));
+        if (string.IsNullOrWhiteSpace(r.Address)) return BadRequest(new MessageDto("Vui lòng nhập địa chỉ giao hàng"));
+        if (!PaymentMethods.Contains(r.PaymentMethod)) return BadRequest(new MessageDto("Phương thức thanh toán không hợp lệ"));
+
+        var uid = User.UserId();
+        List<OrderLineRequest> lines;
+        List<CartItem> cartItems = new();
+        if (uid != null && (r.Items == null || r.Items.Count == 0))
+        {
+            cartItems = await db.CartItems.Where(c => c.UserId == uid).ToListAsync();
+            lines = cartItems.Select(c => new OrderLineRequest(c.ProductId, c.Size, c.Quantity)).ToList();
+        }
+        else lines = r.Items ?? new();
+        if (lines.Count == 0) return BadRequest(new MessageDto("Giỏ hàng đang trống"));
+
+        var order = new Order
+        {
+            UserId = uid,
+            ReceiverName = r.ReceiverName.Trim(),
+            Phone = r.Phone,
+            Address = r.Address.Trim(),
+            Note = r.Note,
+            PaymentMethod = r.PaymentMethod,
+            // Thanh toán ví điện tử: giả lập thanh toán thành công
+            IsPaid = r.PaymentMethod != "Tiền mặt",
+            ShippingFee = ShippingFee
+        };
+        foreach (var l in lines)
+        {
+            if (l.Quantity < 1) return BadRequest(new MessageDto("Số lượng không hợp lệ"));
+            var p = await db.Products.Include(x => x.Sizes).FirstOrDefaultAsync(x => x.Id == l.ProductId);
+            var size = p?.Sizes.FirstOrDefault(s => s.Size == l.Size);
+            if (p == null || size == null) return BadRequest(new MessageDto("Có món không còn bán, vui lòng kiểm tra giỏ"));
+            order.Items.Add(new OrderItem
+            {
+                ProductId = p.Id, ProductName = p.Name, Size = size.Size, Quantity = l.Quantity,
+                UnitPrice = size.Price, LineTotal = size.Price * l.Quantity
+            });
+        }
+        order.Subtotal = order.Items.Sum(i => i.LineTotal);
+        order.Total = order.Subtotal + order.ShippingFee;
+        order.Code = "DH" + DateTime.UtcNow.AddHours(7).ToString("yyMMddHHmmss") + Random.Shared.Next(10, 99);
+
+        db.Orders.Add(order);
+        db.CartItems.RemoveRange(cartItems);
+        await db.SaveChangesAsync();
+        return order.ToDto();
+    }
+
+    // OrderHistoryActivity
+    [HttpGet("my")]
+    [Authorize]
+    public async Task<List<OrderDto>> MyOrders(string? status)
+    {
+        var uid = User.UserId();
+        var q = db.Orders.Include(o => o.Items).Where(o => o.UserId == uid);
+        if (!string.IsNullOrWhiteSpace(status)) q = q.Where(o => o.Status == status);
+        var list = await q.OrderByDescending(o => o.CreatedAt).ToListAsync();
+        return list.Select(o => o.ToDto()).ToList();
+    }
+
+    // OrderDetailActivity: chủ đơn hoặc admin
+    [HttpGet("{id:int}")]
+    [Authorize]
+    public async Task<ActionResult<OrderDto>> Get(int id)
+    {
+        var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        var uid = User.UserId();
+        if (o.UserId != uid && !User.IsInRole(Roles.Admin)) return Forbid();
+        var reviewed = uid == null ? new HashSet<int>() :
+            (await db.Reviews.Where(r => r.OrderId == id && r.UserId == uid).Select(r => r.ProductId).ToListAsync()).ToHashSet();
+        return o.ToDto(reviewed);
+    }
+
+    // Người dùng tự hủy khi đơn còn "Đang xử lý"
+    [HttpPut("{id:int}/cancel")]
+    [Authorize]
+    public async Task<ActionResult<MessageDto>> Cancel(int id)
+    {
+        var uid = User.UserId();
+        var o = await db.Orders.FirstOrDefaultAsync(x => x.Id == id && x.UserId == uid);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        if (o.Status != OrderStatus.Pending) return BadRequest(new MessageDto("Chỉ hủy được đơn đang xử lý"));
+        o.Status = OrderStatus.Cancelled;
+        await db.SaveChangesAsync();
+        return new MessageDto("Đã hủy đơn");
+    }
+}
+
+// ReviewActivity: chỉ user, chỉ món trong đơn đã hoàn thành
+[ApiController]
+[Route("api/reviews")]
+[Authorize]
+public class ReviewsController(AppDbContext db) : ControllerBase
+{
+    [HttpPost]
+    public async Task<ActionResult<MessageDto>> Create(CreateReviewRequest r)
+    {
+        var uid = User.UserId()!.Value;
+        if (r.Stars is < 1 or > 5) return BadRequest(new MessageDto("Số sao từ 1 đến 5"));
+        var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == r.OrderId && x.UserId == uid);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        if (o.Status != OrderStatus.Done) return BadRequest(new MessageDto("Chỉ đánh giá được đơn đã hoàn thành"));
+        if (o.Items.All(i => i.ProductId != r.ProductId)) return BadRequest(new MessageDto("Món này không có trong đơn"));
+        if (await db.Reviews.AnyAsync(x => x.UserId == uid && x.OrderId == r.OrderId && x.ProductId == r.ProductId))
+            return Conflict(new MessageDto("Bạn đã đánh giá món này rồi"));
+
+        db.Reviews.Add(new Review { UserId = uid, OrderId = r.OrderId, ProductId = r.ProductId, Stars = r.Stars, Comment = r.Comment?.Trim() });
+        await db.SaveChangesAsync();
+
+        // Cập nhật rating trung bình của món
+        var p = await db.Products.FindAsync(r.ProductId);
+        var stars = await db.Reviews.Where(x => x.ProductId == r.ProductId).Select(x => x.Stars).ToListAsync();
+        p!.RatingCount = stars.Count;
+        p.AvgRating = stars.Average();
+        await db.SaveChangesAsync();
+        return new MessageDto("Cảm ơn bạn đã đánh giá");
+    }
+}
