@@ -1,20 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
     <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
-        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
-    <RadioGroup android:id="@+id/rgSort" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:paddingStart="12dp" android:paddingTop="8dp" android:paddingEnd="12dp">
-        <RadioButton android:id="@+id/rbAll" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Tất cả" />
-        <RadioButton android:id="@+id/rbBest" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bán chạy" />
-        <RadioButton android:id="@+id/rbCheap" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Giá thấp" />
-    </RadioGroup>
-    <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:gravity="center" android:padding="24dp" android:text="Danh mục chưa có món" android:visibility="gone" />
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize" />
+
+    <!-- Khu vực lọc và sắp xếp -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:background="@drawable/bg_card"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Chọn cách sắp xếp -->
+        <TextView
+            style="@style/Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sắp xếp theo" />
+
+        <Spinner
+            android:id="@+id/spSort"
+            android:layout_width="match_parent"
+            android:layout_height="44dp" />
+
+        <!-- Lọc khoảng giá -->
+        <TextView
+            style="@style/Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lọc theo giá (đồng)" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/etMinPrice"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:hint="Giá từ"
+                android:inputType="number"
+                android:singleLine="true" />
+
+            <EditText
+                android:id="@+id/etMaxPrice"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Giá đến"
+                android:inputType="number"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <!-- Đếm kết quả và xóa bộ lọc -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvResultCount"
+                style="@style/Muted"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Tìm thấy 0 món" />
+
+            <Button
+                android:id="@+id/btnClearFilters"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Xóa bộ lọc"
+                android:textAllCaps="false" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        style="@style/Muted"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="24dp"
+        android:text="Danh mục chưa có món"
+        android:visibility="gone" />
     <!-- GridView: lưới món 2 cột -->
-    <GridView android:id="@+id/gridView" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:clipToPadding="false" android:horizontalSpacing="8dp" android:numColumns="2"
-        android:padding="12dp" android:stretchMode="columnWidth" android:verticalSpacing="8dp" />
+    <GridView
+        android:id="@+id/gridView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:horizontalSpacing="8dp"
+        android:numColumns="2"
+        android:padding="12dp"
+        android:stretchMode="columnWidth"
+        android:verticalSpacing="8dp" />
 </LinearLayout>
