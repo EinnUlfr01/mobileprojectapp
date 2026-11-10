@@ -42,6 +42,12 @@ interface ApiService {
     @GET("api/orders/{id}") suspend fun order(@Path("id") id: Int): OrderDto
     @PUT("api/orders/{id}/cancel") suspend fun cancelOrder(@Path("id") id: Int, @Body body: CancelRequest): MessageDto
     @POST("api/orders/{id}/pay") suspend fun payOrder(@Path("id") id: Int): PaymentLinkDto
+
+    // ---------- Chuyển khoản QR ----------
+    @GET("api/payments/methods") suspend fun paymentMethods(): List<String>
+    @GET("api/payments/qr/{code}") suspend fun bankQr(@Path("code") code: String): BankQrDto
+    @GET("api/payments/status/{code}") suspend fun paymentStatus(@Path("code") code: String): PaymentStatusDto
+    @PUT("api/admin/orders/{id}/confirm-paid") suspend fun confirmPaid(@Path("id") id: Int): MessageDto
     @POST("api/reviews") suspend fun review(@Body body: CreateReviewRequest): MessageDto
 
     // ---------- Admin ----------

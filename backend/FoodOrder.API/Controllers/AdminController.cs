@@ -166,6 +166,20 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         return new MessageDto("Đã cập nhật trạng thái");
     }
 
+    // Admin kiểm tra tài khoản ngân hàng thấy tiền về rồi thì bấm xác nhận
+    [HttpPut("orders/{id:int}/confirm-paid")]
+    [Authorize(Roles = Roles.OrderManagers)]
+    public async Task<ActionResult<MessageDto>> ConfirmPaid(int id)
+    {
+        var o = await db.Orders.FindAsync(id);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        if (o.IsPaid) return BadRequest(new MessageDto("Đơn đã được thanh toán"));
+        var staff = await db.Users.FindAsync(User.UserId());
+        BankQrService.MarkPaid(db, o, $"Đã nhận tiền {o.PaymentMethod.ToLower()} (xác nhận bởi {staff?.FullName ?? "cửa hàng"})");
+        await db.SaveChangesAsync();
+        return new MessageDto("Đã xác nhận nhận tiền");
+    }
+
     // App nhân viên hỏi định kỳ để bắn thông báo khi có đơn mới / tin nhắn mới
     [HttpGet("alerts")]
     public async Task<StaffAlertsDto> Alerts() => new(

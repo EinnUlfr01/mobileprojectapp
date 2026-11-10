@@ -97,11 +97,15 @@ class ManageOrdersActivity : AppCompatActivity() {
 
     // Bấm vào đơn: xem chi tiết hoặc đổi trạng thái
     private fun showOrderActions(o: OrderDto) {
-        val options = arrayOf("Xem chi tiết đơn") + OrderStatus.ALL.map { "Chuyển sang: $it" }
+        val confirmPaid = !o.isPaid && o.paymentMethod != "Tiền mặt" && o.status != OrderStatus.CANCELLED
+        val options = arrayOf("Xem chi tiết đơn") + OrderStatus.ALL.map { "Chuyển sang: $it" } +
+            (if (confirmPaid) arrayOf("Xác nhận đã nhận tiền (${o.total.toMoney()})") else emptyArray())
         AlertDialog.Builder(this)
             .setTitle("Đơn #${o.code} · ${o.status}\n${o.receiverName} · ${o.phone}")
             .setItems(options) { _, which ->
-                if (which == 0) {
+                if (confirmPaid && which == options.size - 1) {
+                    api({ confirmPaid(o.id) }) { toast(it.message ?: "Đã xác nhận"); loadOrders() }
+                } else if (which == 0) {
                     startActivity(Intent(this, OrderDetailActivity::class.java).putExtra(Nav.EXTRA_ID, o.id))
                 } else {
                     val status = OrderStatus.ALL[which - 1]

@@ -2,5 +2,13 @@
   "VnPay": {
     "TmnCode": "MA_TMNCODE_SANDBOX",
     "HashSecret": "CHUOI_HASHSECRET_SANDBOX"
+  },
+  "BankQr": {
+    "BankId": "970436",
+    "BankName": "Vietcombank",
+    "AccountNo": "SO_TAI_KHOAN",
+    "AccountName": "TEN CHU TAI KHOAN KHONG DAU",
+    "ExpireMinutes": 15,
+    "SePayApiToken": ""
   }
 }

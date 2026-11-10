@@ -8,10 +8,10 @@ namespace FoodOrder.API.Controllers;
 
 [ApiController]
 [Route("api/orders")]
-public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerBase
+public class OrdersController(AppDbContext db, VnPayService vnPay, BankQrService bankQr) : ControllerBase
 {
     public const decimal ShippingFee = 15000;
-    private static readonly string[] PaymentMethods = { "Tiền mặt", PaymentsController.VnPayMethod };
+    private static readonly string[] PaymentMethods = { "Tiền mặt", PaymentsController.VnPayMethod, BankQrService.Method };
 
     // CheckoutActivity + GuestCheckoutActivity
     // - User đã đăng nhập: không gửi Items -> lấy từ giỏ hàng trên server rồi xóa giỏ
@@ -24,6 +24,8 @@ public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerB
         if (!Mapping.IsValidPhone(r.Phone)) return BadRequest(new MessageDto("Số điện thoại phải đủ 10 số"));
         if (string.IsNullOrWhiteSpace(r.Address)) return BadRequest(new MessageDto("Vui lòng nhập địa chỉ giao hàng"));
         if (!PaymentMethods.Contains(r.PaymentMethod)) return BadRequest(new MessageDto("Phương thức thanh toán không hợp lệ"));
+        if (r.PaymentMethod == BankQrService.Method && !bankQr.Options.Enabled)
+            return BadRequest(new MessageDto("Cửa hàng chưa cấu hình tài khoản nhận chuyển khoản"));
 
         var uid = User.UserId();
         List<OrderLineRequest> lines;

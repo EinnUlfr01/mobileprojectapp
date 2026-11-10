@@ -37,8 +37,40 @@ public class VnPayService(IOptions<VnPayOptions> vnPay, IOptions<JwtOptions> jwt
 
 [ApiController]
 [Route("api/payments")]
-public class PaymentsController(AppDbContext db, VnPayService vnPay) : ControllerBase
+public class PaymentsController(AppDbContext db, VnPayService vnPay, BankQrService bankQr) : ControllerBase
 {
+    // Các cách thanh toán đang dùng được (màn đặt hàng gọi để hiện lựa chọn)
+    [HttpGet("methods")]
+    public List<string> Methods()
+    {
+        var list = new List<string> { "Tiền mặt", VnPayMethod };
+        if (bankQr.Options.Enabled) list.Add(BankQrService.Method);
+        return list;
+    }
+
+    // Thông tin mã QR chuyển khoản của 1 đơn (khách vãng lai cũng xem được nên tra theo mã đơn)
+    [HttpGet("qr/{code}")]
+    public async Task<ActionResult<BankQrDto>> Qr(string code)
+    {
+        if (!bankQr.Options.Enabled) return BadRequest(new MessageDto("Cửa hàng chưa cấu hình tài khoản nhận chuyển khoản"));
+        var o = await db.Orders.FirstOrDefaultAsync(x => x.Code == code);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        if (o.PaymentMethod != BankQrService.Method) return BadRequest(new MessageDto("Đơn này không thanh toán bằng chuyển khoản"));
+        var opt = bankQr.Options;
+        return new BankQrDto(o.Code, bankQr.QrImageUrl(o), opt.BankName, opt.AccountNo, opt.AccountName, o.Total,
+            BankQrService.TransferContent(o), o.IsPaid, o.CreatedAt.AddMinutes(opt.ExpireMinutes), opt.AutoCheck);
+    }
+
+    // App hỏi định kỳ xem đơn đã nhận tiền chưa (mỗi lần hỏi thì kiểm tra SePay nếu có token)
+    [HttpGet("status/{code}")]
+    public async Task<ActionResult<PaymentStatusDto>> Status(string code)
+    {
+        await bankQr.CheckPaymentsAsync(db);
+        var o = await db.Orders.AsNoTracking().FirstOrDefaultAsync(x => x.Code == code);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        return new PaymentStatusDto(o.Code, o.IsPaid, o.Status);
+    }
+
     public const string VnPayMethod = "VNPay";
     private string Secret => vnPay.Secret;
 

@@ -66,3 +66,8 @@ public record VoucherRequest(string Code, string Description, string Type, decim
     decimal MaxDiscount, int UsageLimit, DateTime? ExpiresAt, bool IsActive);
 public record CheckVoucherRequest(string Code, decimal Subtotal);
 public record VoucherResultDto(string Code, decimal Discount, string Message);
+
+// ---------- Chuyển khoản QR ----------
+public record BankQrDto(string OrderCode, string QrUrl, string BankName, string AccountNo, string AccountName,
+    decimal Amount, string Content, bool IsPaid, DateTime ExpiresAt, bool AutoCheck);
+public record PaymentStatusDto(string OrderCode, bool IsPaid, string Status);

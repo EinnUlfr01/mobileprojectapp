@@ -34,6 +34,17 @@ API chặn theo vai trò (`[Authorize(Roles = ...)]`), app chỉ hiện các nú
 - App mở trang thanh toán trong WebView, VNPay chuyển về `/api/payments/vnpay-return`, API kiểm tra chữ ký rồi đánh dấu đơn đã thanh toán.
 - Đơn VNPay chưa trả tiền có nút "Thanh toán qua VNPay" trong chi tiết đơn.
 
+### Chuyển khoản QR (thanh toán thật)
+
+- Đặt hàng chọn "Chuyển khoản QR": app hiện mã VietQR có sẵn số tiền và nội dung (= mã đơn). Quét bằng app ngân hàng hoặc MoMo, tiền vào thẳng tài khoản cửa hàng.
+- Cấu hình tài khoản nhận tiền trong `appsettings.Local.json` (không đưa lên GitHub):
+  ```json
+  "BankQr": { "BankId": "970436", "BankName": "Vietcombank", "AccountNo": "SO_TAI_KHOAN", "AccountName": "TEN KHONG DAU", "ExpireMinutes": 15, "SePayApiToken": "" }
+  ```
+- Xác nhận đã nhận tiền:
+  - Thủ công: admin / nhân viên đơn hàng vào Quản lý đơn hàng, bấm đơn, chọn "Xác nhận đã nhận tiền".
+  - Tự động: đăng ký https://sepay.vn, liên kết tài khoản ngân hàng, tạo API token rồi điền vào `SePayApiToken`. API tự kiểm tra giao dịch mỗi khi app hỏi trạng thái (không cần địa chỉ public).
+
 ### Ảnh món
 
 - Admin / Quản lý thực đơn bấm "Chọn ảnh từ điện thoại" khi thêm/sửa món hoặc danh mục, ảnh lưu ở `wwwroot/uploads`.

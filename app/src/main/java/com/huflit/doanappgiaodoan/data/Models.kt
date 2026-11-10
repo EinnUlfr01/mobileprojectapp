@@ -91,7 +91,14 @@ object OrderStatus {
     val ALL = listOf(PENDING, SHIPPING, DONE, CANCELLED)
 }
 
-val PAYMENT_METHODS = listOf("Tiền mặt", "VNPay")
+const val QR_METHOD = "Chuyển khoản QR"
+val PAYMENT_METHODS = listOf("Tiền mặt", "VNPay", QR_METHOD) // danh sách thật lấy từ API /api/payments/methods
+
+data class BankQrDto(
+    val orderCode: String, val qrUrl: String, val bankName: String, val accountNo: String, val accountName: String,
+    val amount: Double, val content: String, val isPaid: Boolean, val expiresAt: String, val autoCheck: Boolean
+)
+data class PaymentStatusDto(val orderCode: String, val isPaid: Boolean, val status: String)
 
 // Vai trò (khớp với Roles bên API)
 object Role {

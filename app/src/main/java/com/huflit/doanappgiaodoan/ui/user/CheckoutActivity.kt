@@ -15,6 +15,7 @@ import com.huflit.doanappgiaodoan.data.GuestCart
 import com.huflit.doanappgiaodoan.data.OrderDto
 import com.huflit.doanappgiaodoan.data.OrderLineRequest
 import com.huflit.doanappgiaodoan.data.PAYMENT_METHODS
+import com.huflit.doanappgiaodoan.data.QR_METHOD
 import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.databinding.ActivityCheckoutBinding
 import com.huflit.doanappgiaodoan.util.api
@@ -37,6 +38,9 @@ class CheckoutActivity : AppCompatActivity() {
     private val payLauncher = registerForActivityResult(PaymentActivity.Contract()) { paid ->
         pendingOrder?.let { onDone(it, paid) }
     }
+    private val qrLauncher = registerForActivityResult(QrPaymentActivity.Contract()) { paid ->
+        pendingOrder?.let { onDone(it, paid) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,15 +48,9 @@ class CheckoutActivity : AppCompatActivity() {
         setContentView(b.root)
         setupToolbar(b.toolbar, if (Session.isLoggedIn) "Xác nhận đơn hàng" else "Thông tin nhận hàng")
 
-        PAYMENT_METHODS.forEachIndexed { i, m ->
-            b.rgPayment.addView(RadioButton(this).apply {
-                id = View.generateViewId()
-                text = if (i == 0) "$m khi nhận hàng" else "$m (thẻ ATM, Visa, QR ngân hàng)"
-                tag = m
-                isChecked = i == 0
-                minHeight = 48
-            })
-        }
+        // Cách thanh toán lấy từ server (chuyển khoản QR chỉ có khi cửa hàng đã cấu hình tài khoản)
+        showPaymentMethods(PAYMENT_METHODS.take(2))
+        api({ paymentMethods() }, onError = {}) { showPaymentMethods(it) }
 
         val user = Session.user
         if (Session.isLoggedIn && user != null) {
@@ -70,6 +68,23 @@ class CheckoutActivity : AppCompatActivity() {
         b.btnConfirm.setOnClickListener { confirm() }
         b.btnApplyVoucher.setOnClickListener { applyVoucher(b.edtVoucher.text.toString()) }
         b.tvPickVoucher.setOnClickListener { pickVoucher() }
+    }
+
+    private fun showPaymentMethods(methods: List<String>) {
+        b.rgPayment.removeAllViews()
+        methods.forEachIndexed { i, m ->
+            b.rgPayment.addView(RadioButton(this).apply {
+                id = View.generateViewId()
+                text = when (m) {
+                    "Tiền mặt" -> "Tiền mặt khi nhận hàng"
+                    QR_METHOD -> "Chuyển khoản QR (quét bằng app ngân hàng, MoMo)"
+                    else -> "$m (thẻ ATM, Visa)"
+                }
+                tag = m
+                isChecked = i == 0
+                minHeight = 48
+            })
+        }
     }
 
     private fun showLines(list: List<CartLine>) {
@@ -160,7 +175,12 @@ class CheckoutActivity : AppCompatActivity() {
         b.btnConfirm.isEnabled = false
         api({ createOrder(req) }, onError = { b.btnConfirm.isEnabled = true; toast(it) }) { order ->
             val url = order.paymentUrl
-            if (url != null) {
+            if (order.paymentMethod == QR_METHOD && order.total > 0) {
+                // Chuyển khoản: mở màn mã QR
+                if (!Session.isLoggedIn) GuestCart.clear()
+                pendingOrder = order
+                qrLauncher.launch(order.code)
+            } else if (url != null) {
                 // Đơn đã tạo, giỏ đã xóa trên server -> xóa luôn giỏ của khách rồi mở VNPay
                 if (!Session.isLoggedIn) GuestCart.clear()
                 pendingOrder = order
@@ -170,8 +190,9 @@ class CheckoutActivity : AppCompatActivity() {
     }
 
     private fun onDone(order: OrderDto, paid: Boolean) {
-        if (order.paymentUrl == null) toast("Đặt hàng thành công")
-        else if (paid) toast("Thanh toán VNPay thành công")
+        val online = order.paymentUrl != null || order.paymentMethod == QR_METHOD
+        if (!online) toast("Đặt hàng thành công")
+        else if (paid) toast("Thanh toán thành công")
         else toast("Chưa thanh toán. Đơn vẫn được giữ, bạn có thể thanh toán lại hoặc trả tiền mặt khi nhận hàng")
         if (Session.isLoggedIn) {
             // Về trang chủ rồi mở lịch sử đơn
@@ -183,7 +204,7 @@ class CheckoutActivity : AppCompatActivity() {
                 .putExtra("code", order.code)
                 .putExtra("name", order.receiverName)
                 .putExtra("phone", order.phone)
-                .putExtra("payment", order.paymentMethod + if (order.paymentUrl == null) "" else if (paid) " (đã thanh toán)" else " (chưa thanh toán)")
+                .putExtra("payment", order.paymentMethod + if (!online) "" else if (paid) " (đã thanh toán)" else " (chưa thanh toán)")
                 .putExtra("total", order.total)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }

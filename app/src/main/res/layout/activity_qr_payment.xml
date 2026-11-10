@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center_horizontal" android:orientation="vertical" android:padding="16dp">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
+                android:text="Mở app ngân hàng (Vietcombank, MB, ...) hoặc MoMo, chọn Quét mã QR"
+                android:textColor="@color/ink" android:textSize="14sp" />
+
+            <!-- Ảnh mã VietQR đã có sẵn số tiền và nội dung chuyển khoản -->
+            <FrameLayout android:layout_width="280dp" android:layout_height="280dp" android:layout_marginTop="12dp"
+                android:background="@color/white" android:padding="8dp">
+                <TextView android:id="@+id/imgText" style="@style/Placeholder" android:layout_width="match_parent"
+                    android:layout_height="match_parent" android:text="Đang tải mã QR…" android:textColor="@color/muted" android:textSize="14sp" />
+                <ImageView android:id="@+id/imgQr" android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:contentDescription="Mã QR chuyển khoản" android:scaleType="fitCenter" android:visibility="gone" />
+            </FrameLayout>
+
+            <TextView android:id="@+id/tvStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:background="@drawable/bg_badge" android:gravity="center"
+                android:padding="12dp" android:text="Đang chờ thanh toán…" android:textColor="@color/primary_dark" android:textStyle="bold" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="14dp">
+                <TextView android:id="@+id/tvBank" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/ink" android:textStyle="bold" />
+                <TextView android:id="@+id/tvAccountName" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Số tài khoản" />
+                        <TextView android:id="@+id/tvAccountNo" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:textColor="@color/ink" android:textSize="16sp" android:textStyle="bold" />
+                    </LinearLayout>
+                    <Button android:id="@+id/btnCopyAccount" style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content" android:layout_height="44dp" android:text="Sao chép" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Số tiền" />
+                        <TextView android:id="@+id/tvAmount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:textColor="@color/danger" android:textSize="18sp" android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nội dung chuyển khoản (bắt buộc)" />
+                        <TextView android:id="@+id/tvContent" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:textColor="@color/ink" android:textSize="16sp" android:textStyle="bold" />
+                    </LinearLayout>
+                    <Button android:id="@+id/btnCopyContent" style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content" android:layout_height="44dp" android:text="Sao chép" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView android:id="@+id/tvNote" style="@style/Muted" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center" />
+        </LinearLayout>
+    </ScrollView>
+    <Button android:id="@+id/btnCheck" android:layout_width="match_parent" android:layout_height="56dp"
+        android:layout_marginStart="12dp" android:layout_marginTop="8dp" android:layout_marginEnd="12dp" android:text="Tôi đã chuyển khoản" />
+    <Button android:id="@+id/btnLater" style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="match_parent" android:layout_height="52dp" android:layout_margin="4dp" android:text="Thanh toán sau" />
+</LinearLayout>

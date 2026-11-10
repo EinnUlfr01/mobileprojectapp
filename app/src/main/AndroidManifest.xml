@@ -39,6 +39,7 @@
         <activity android:name=".ui.user.CheckoutActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.user.OrderSuccessActivity" />
         <activity android:name=".ui.user.PaymentActivity" />
+        <activity android:name=".ui.user.QrPaymentActivity" />
         <activity android:name=".ui.user.NotificationsActivity" />
         <activity android:name=".ui.user.FavoritesActivity" />
 

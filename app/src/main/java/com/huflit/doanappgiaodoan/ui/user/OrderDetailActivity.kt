@@ -14,6 +14,7 @@ import com.huflit.doanappgiaodoan.data.CancelRequest
 import com.huflit.doanappgiaodoan.data.OrderDto
 import com.huflit.doanappgiaodoan.data.OrderItemDto
 import com.huflit.doanappgiaodoan.data.OrderStatus
+import com.huflit.doanappgiaodoan.data.QR_METHOD
 import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.databinding.ActivityOrderDetailBinding
 import com.huflit.doanappgiaodoan.databinding.FooterOrderDetailBinding
@@ -35,6 +36,11 @@ class OrderDetailActivity : AppCompatActivity() {
     private var orderId = 0
     private var current: OrderDto? = null
     private val adapter = OrderLineAdapter { item -> openReview(item) }
+
+    private val qrLauncher = registerForActivityResult(QrPaymentActivity.Contract()) { paid ->
+        if (paid) toast("Thanh toán thành công")
+        load()
+    }
 
     // Thanh toán lại bằng VNPay
     private val payLauncher = registerForActivityResult(PaymentActivity.Contract()) { paid ->
@@ -68,7 +74,9 @@ class OrderDetailActivity : AppCompatActivity() {
             com.huflit.doanappgiaodoan.ui.chat.ChatActivity.openForCustomer(this, "Mình cần hỗ trợ đơn #$code: ")
         }
         b.btnPay.setOnClickListener {
-            api({ payOrder(orderId) }) { link -> payLauncher.launch(link.paymentUrl) }
+            val o = current ?: return@setOnClickListener
+            if (o.paymentMethod == QR_METHOD) qrLauncher.launch(o.code)
+            else api({ payOrder(orderId) }) { link -> payLauncher.launch(link.paymentUrl) }
         }
         b.btnCancel.setOnClickListener { askCancelReason() }
     }
@@ -110,9 +118,11 @@ class OrderDetailActivity : AppCompatActivity() {
         steps.forEachIndexed { i, (status, title) ->
             val item = ItemTimelineBinding.inflate(layoutInflater, header.llTimeline, false)
             val reached = i <= current
-            val log = history.lastOrNull { it.status == status }
+            val logs = history.filter { it.status == status }
+            val log = logs.firstOrNull()
             val time = log?.createdAt?.toDisplayDate() ?: if (i == 0) o.createdAt.toDisplayDate() else null
-            val note = log?.note ?: if (status == OrderStatus.CANCELLED) o.cancelReason else null
+            val note = logs.mapNotNull { it.note }.joinToString(" · ").ifEmpty { null }
+                ?: if (status == OrderStatus.CANCELLED) o.cancelReason else null
             val by = log?.changedBy?.takeIf { status != OrderStatus.PENDING }?.let { "bởi $it" }
             item.tvTitle.text = title
             item.tvTitle.setTextColor(getColor(if (reached) R.color.ink else R.color.muted))
@@ -151,6 +161,7 @@ class OrderDetailActivity : AppCompatActivity() {
             // Đơn chưa trả tiền: cho thanh toán online bằng VNPay
             val canPay = !Session.isStaff && !o.isPaid && o.status != OrderStatus.CANCELLED && o.status != OrderStatus.DONE
             b.btnPay.visibility = if (canPay) View.VISIBLE else View.GONE
+            b.btnPay.text = if (o.paymentMethod == QR_METHOD) "Thanh toán bằng mã QR" else "Thanh toán qua VNPay"
             b.memberActions.visibility = if (!Session.isStaff) View.VISIBLE else View.GONE
         }
     }
