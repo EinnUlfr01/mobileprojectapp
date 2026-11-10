@@ -45,6 +45,7 @@ object Session {
 
     fun logout() {
         prefs.edit().remove("token").remove("user").remove("guest").apply()
+        com.huflit.doanappgiaodoan.util.ChatRealtime.disconnect()
     }
 }
 

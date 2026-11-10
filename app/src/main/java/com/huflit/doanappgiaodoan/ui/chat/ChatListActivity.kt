@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.huflit.doanappgiaodoan.data.ConversationDto
 import com.huflit.doanappgiaodoan.databinding.ActivityChatListBinding
 import com.huflit.doanappgiaodoan.databinding.ItemConversationBinding
+import com.huflit.doanappgiaodoan.util.ChatRealtime
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import com.huflit.doanappgiaodoan.util.toShortTime
@@ -47,13 +48,17 @@ class ChatListActivity : AppCompatActivity() {
         })
     }
 
+    private val onRealtime: (Int, com.huflit.doanappgiaodoan.data.ChatMessageDto) -> Unit = { _, _ -> load() }
+
     override fun onResume() {
         super.onResume()
+        ChatRealtime.addListener(onRealtime)
         handler.post(refresh)
     }
 
     override fun onPause() {
         super.onPause()
+        ChatRealtime.removeListener(onRealtime)
         handler.removeCallbacks(refresh)
     }
 

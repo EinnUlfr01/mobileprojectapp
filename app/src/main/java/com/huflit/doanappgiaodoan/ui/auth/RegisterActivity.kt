@@ -54,6 +54,7 @@ class RegisterActivity : AppCompatActivity() {
         }) { res ->
             // Đăng ký xong thì đăng nhập luôn
             Session.save(res)
+            com.huflit.doanappgiaodoan.util.ChatRealtime.connect()
             toast("Đăng ký thành công")
             Nav.home(this)
         }

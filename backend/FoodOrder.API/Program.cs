@@ -31,6 +31,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = "name",
             RoleClaimType = "role"
         };
+        // SignalR qua WebSocket có thể gửi token trên URL (?access_token=...)
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var token = ctx.Request.Query["access_token"].ToString();
+                if (!string.IsNullOrEmpty(token) && ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    ctx.Token = token;
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 
@@ -40,6 +51,7 @@ builder.Services.Configure<VnPayOptions>(builder.Configuration.GetSection("VnPay
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<FoodOrder.API.Controllers.VnPayService>();
 builder.Services.AddControllers();
+builder.Services.AddSignalR(); // chat realtime
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -60,6 +72,7 @@ app.UseStaticFiles(); // phục vụ ảnh trong wwwroot/images
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<FoodOrder.API.Hubs.ChatHub>("/hubs/chat");
 app.MapGet("/", () => "FoodOrder API đang chạy. Xem tài liệu tại /scalar");
 
 app.Run();

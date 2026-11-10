@@ -1,6 +1,8 @@
 using FoodOrder.API.Common;
 using FoodOrder.API.Data;
+using FoodOrder.API.Hubs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +13,7 @@ namespace FoodOrder.API.Controllers;
 [ApiController]
 [Route("api/chat")]
 [Authorize]
-public class ChatController(AppDbContext db) : ControllerBase
+public class ChatController(AppDbContext db, IHubContext<ChatHub> hub) : ControllerBase
 {
     private const int MaxLength = 1000;
 
@@ -72,7 +74,10 @@ public class ChatController(AppDbContext db) : ControllerBase
         c.LastMessageAt = m.CreatedAt;
         c.UnreadByStaff++;
         await db.SaveChangesAsync();
-        return ToDto(m);
+        // Đẩy ngay cho mọi nhân viên đang mở app + các máy khác của chính khách
+        var dto = ToDto(m);
+        await hub.Clients.Groups(ChatHub.StaffGroup, ChatHub.CustomerGroup(me.Id)).SendAsync("message", c.Id, dto);
+        return dto;
     }
 
     // Số tin cửa hàng gửi mà khách chưa đọc (khách) / tổng tin khách gửi chưa trả lời (nhân viên)
@@ -136,6 +141,9 @@ public class ChatController(AppDbContext db) : ControllerBase
         c.UnreadByCustomer++;
         c.UnreadByStaff = 0;
         await db.SaveChangesAsync();
-        return ToDto(m);
+        // Đẩy ngay cho khách + các nhân viên khác (để danh sách hội thoại cập nhật)
+        var dto = ToDto(m);
+        await hub.Clients.Groups(ChatHub.StaffGroup, ChatHub.CustomerGroup(c.CustomerId)).SendAsync("message", c.Id, dto);
+        return dto;
     }
 }

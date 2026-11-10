@@ -18,6 +18,7 @@ import com.huflit.doanappgiaodoan.databinding.ActivityChatBinding
 import com.huflit.doanappgiaodoan.databinding.ItemChatMeBinding
 import com.huflit.doanappgiaodoan.databinding.ItemChatOtherBinding
 import com.huflit.doanappgiaodoan.util.AppPoller
+import com.huflit.doanappgiaodoan.util.ChatRealtime
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import com.huflit.doanappgiaodoan.util.toShortTime
@@ -26,7 +27,8 @@ import com.huflit.doanappgiaodoan.util.toast
 // Chat trực tuyến (dùng chung):
 // - Khách hàng: conversationId = 0, chat với cửa hàng
 // - Nhân viên: conversationId = id cuộc trò chuyện với 1 khách
-// Mỗi 3 giây hỏi server lấy tin mới (afterId = id tin cuối cùng) để cập nhật gần như tức thời.
+// Tin mới được server đẩy xuống ngay qua SignalR (ChatRealtime).
+// Dự phòng: mất kết nối realtime thì 3 giây hỏi server 1 lần (afterId = id tin cuối cùng).
 class ChatActivity : AppCompatActivity() {
     private lateinit var b: ActivityChatBinding
     private var conversationId = 0
@@ -38,7 +40,8 @@ class ChatActivity : AppCompatActivity() {
     private val pollTask = object : Runnable {
         override fun run() {
             fetch()
-            handler.postDelayed(this, POLL_MS)
+            // Realtime đang chạy thì chỉ hỏi lại thưa để dự phòng
+            handler.postDelayed(this, if (ChatRealtime.isConnected) 15000L else POLL_MS)
         }
     }
 
@@ -59,15 +62,27 @@ class ChatActivity : AppCompatActivity() {
         b.btnSend.setOnClickListener { send() }
     }
 
+    // Tin realtime: khách nhận mọi tin của mình; nhân viên chỉ nhận tin của cuộc trò chuyện đang mở
+    private val onRealtime: (Int, ChatMessageDto) -> Unit = { convId, m ->
+        if (!isStaffView || convId == conversationId) {
+            addMessages(listOf(m))
+            // Đang xem thì gọi server để đánh dấu đã đọc
+            fetch()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         AppPoller.chatScreenOpen = true // đang mở màn chat thì không bắn thông báo tin nhắn
+        ChatRealtime.addListener(onRealtime)
+        ChatRealtime.connect()
         handler.post(pollTask)
     }
 
     override fun onPause() {
         super.onPause()
         AppPoller.chatScreenOpen = false
+        ChatRealtime.removeListener(onRealtime)
         handler.removeCallbacks(pollTask)
     }
 

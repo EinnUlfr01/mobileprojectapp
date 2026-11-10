@@ -43,6 +43,7 @@ class LoginActivity : AppCompatActivity() {
             toast(it)
         }) { res ->
             Session.save(res)
+            com.huflit.doanappgiaodoan.util.ChatRealtime.connect()
             toast("Xin chào ${res.user.fullName}")
             Nav.home(this) // user -> trang chủ, admin -> trang quản trị
         }

@@ -64,15 +64,33 @@ object AppPoller {
         app = context.applicationContext
         if (running) return
         running = true
+        ChatRealtime.addListener(onRealtimeMessage)
+        ChatRealtime.connect()
         handler.postDelayed(tick, 1500)
     }
 
     fun stop() {
         running = false
         handler.removeCallbacks(tick)
+        ChatRealtime.removeListener(onRealtimeMessage)
+        ChatRealtime.disconnect()
+    }
+
+    // Tin nhắn realtime tới: không ở màn chat thì bật thông báo ngay, không đợi lần hỏi tiếp theo
+    private val onRealtimeMessage: (Int, com.huflit.doanappgiaodoan.data.ChatMessageDto) -> Unit = { _, m ->
+        val fromOtherSide = m.isFromStaff != Session.isStaff
+        if (fromOtherSide && !chatScreenOpen) {
+            if (Session.isStaff)
+                show(CHAT_NOTIFICATION_ID, "Tin nhắn từ ${m.senderName}", m.content, Intent(app, ChatListActivity::class.java))
+            else
+                show(CHAT_NOTIFICATION_ID, "Cửa hàng đã trả lời", m.content, Intent(app, ChatActivity::class.java))
+        }
+        onUpdate?.invoke()
     }
 
     private fun poll() {
+        // Tự nối lại nếu bị rớt, đổi tài khoản thì nối bằng token mới, đăng xuất thì ngắt
+        ChatRealtime.connect()
         if (busy || !Session.isLoggedIn) return
         busy = true
         scope.launch {
@@ -106,7 +124,7 @@ object AppPoller {
 
         val unread = api.chatUnread().count
         val lastChat = state.getInt(key("chat"), 0)
-        if (unread > lastChat && !chatScreenOpen)
+        if (unread > lastChat && !chatScreenOpen && !ChatRealtime.isConnected)
             show(CHAT_NOTIFICATION_ID, "Cửa hàng đã trả lời", "Bạn có $unread tin nhắn mới", Intent(app, ChatActivity::class.java))
         state.edit().putInt(key("chat"), unread).apply()
     }
@@ -122,7 +140,7 @@ object AppPoller {
             state.edit().putInt(key("order"), a.latestOrderId).apply()
         }
         val lastChat = state.getInt(key("chat"), 0)
-        if (a.chatUnread > lastChat && !chatScreenOpen)
+        if (a.chatUnread > lastChat && !chatScreenOpen && !ChatRealtime.isConnected)
             show(CHAT_NOTIFICATION_ID, "Tin nhắn mới từ khách hàng", "${a.chatUnread} tin chưa trả lời",
                 Intent(app, ChatListActivity::class.java))
         state.edit().putInt(key("chat"), a.chatUnread).apply()

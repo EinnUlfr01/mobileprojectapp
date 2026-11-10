@@ -55,7 +55,7 @@ Muốn tạo lại dữ liệu từ đầu: xóa database `DoAnAppGiaoDoAn` tron
 
 | Chức năng | Mô tả | Màn hình |
 |---|---|---|
-| Chat trực tuyến | Khách nhắn tin với cửa hàng, mọi vai trò quản trị trả lời. App tự lấy tin mới mỗi 3 giây | ChatActivity (khách + nhân viên), ChatListActivity (nhân viên) |
+| Chat trực tuyến | Khách nhắn tin với cửa hàng, mọi vai trò quản trị trả lời. Realtime bằng SignalR (`/hubs/chat`): gửi là bên kia thấy ngay + bật thông báo. Mất kết nối thì tự chuyển sang hỏi server mỗi 3 giây | ChatActivity (khách + nhân viên), ChatListActivity (nhân viên) |
 | Thông báo | Admin đổi trạng thái đơn, thanh toán VNPay xong → khách nhận thông báo trên điện thoại. Nhân viên được báo khi có đơn mới, tin nhắn mới | NotificationsActivity, chuông + chấm đỏ ở trang chủ |
 | Mã giảm giá | Giảm %, giảm tiền, freeship; có đơn tối thiểu, giảm tối đa, số lượt, hạn dùng. Mẫu: `GIAM20`, `GIAM10K`, `FREESHIP` | CheckoutActivity, ManageVouchersActivity |
 | Món yêu thích | Bấm trái tim ở chi tiết món | FavoritesActivity (GridView) |
