@@ -59,14 +59,12 @@
                     android:padding="14dp" android:text="Bạn đang đặt món không cần tài khoản. Bấm vào đây để đăng ký và lưu lịch sử đơn."
                     android:textColor="@color/primary_dark" android:textSize="13sp" android:visibility="gone" />
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="110dp"
-                    android:layout_margin="16dp" android:background="@drawable/bg_banner"
-                    android:gravity="center_vertical" android:orientation="vertical" android:padding="18dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Freeship đơn đầu tiên" android:textColor="@color/white" android:textSize="20sp" android:textStyle="bold" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Giao nhanh trong 30 phút" android:textColor="@color/white" android:textSize="14sp" />
-                </LinearLayout>
+                <!-- Banner quảng cáo: RecyclerView ngang, lướt từng trang, tự chuyển sau 3.5 giây -->
+                <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvBanner"
+                    android:layout_width="match_parent" android:layout_height="170dp"
+                    android:layout_marginTop="16dp" android:clipToPadding="false" android:overScrollMode="never" />
+                <LinearLayout android:id="@+id/bannerDots" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" android:gravity="center" android:orientation="horizontal" />
 
                 <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginStart="16dp" android:text="Danh mục" />

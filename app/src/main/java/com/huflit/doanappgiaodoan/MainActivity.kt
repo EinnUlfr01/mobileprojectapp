@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.databinding.ActivityMainBinding
+import com.huflit.doanappgiaodoan.ui.BannerSlider
 import com.huflit.doanappgiaodoan.ui.CategoryChipAdapter
 import com.huflit.doanappgiaodoan.ui.Nav
 import com.huflit.doanappgiaodoan.ui.ProductCardAdapter
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private val categoryAdapter = CategoryChipAdapter { Nav.category(this, it.id, it.name) }
     private val bestAdapter = ProductCardAdapter { Nav.product(this, it.id) }
     private val newAdapter = ProductRowAdapter { Nav.product(this, it.id) }
+    private lateinit var banner: BannerSlider
     private val askNotification = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +48,16 @@ class MainActivity : AppCompatActivity() {
         b.rvBestSeller.adapter = bestAdapter
         b.rvNew.layoutManager = LinearLayoutManager(this)
         b.rvNew.adapter = newAdapter
+
+        // Banner trượt: bấm banner mã giảm giá thì sao chép mã GIAM20, banner khác mở trang tìm món
+        banner = BannerSlider(b.rvBanner, b.bannerDots,
+            listOf(R.drawable.banner_1, R.drawable.banner_2, R.drawable.banner_3)) { index ->
+            if (index == 1) {
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("voucher", "GIAM20"))
+                android.widget.Toast.makeText(this, "Đã sao chép mã GIAM20, dán ở bước thanh toán nhé", android.widget.Toast.LENGTH_SHORT).show()
+            } else startActivity(Intent(this, SearchActivity::class.java))
+        }
 
         b.tvSearch.setOnClickListener { startActivity(Intent(this, SearchActivity::class.java)) }
         b.tvGuestBanner.setOnClickListener { startActivity(Intent(this, RegisterActivity::class.java)) }
@@ -73,6 +85,7 @@ class MainActivity : AppCompatActivity() {
         b.bottomNav.menu.findItem(R.id.nav_home)?.isChecked = true
         b.btnBell.visibility = if (Session.isLoggedIn) android.view.View.VISIBLE else android.view.View.GONE
         refreshBadges()
+        banner.start()
         AppPoller.onUpdate = { refreshBadges() }
         val user = Session.user
         if (Session.isLoggedIn && user != null) {
@@ -90,6 +103,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         AppPoller.onUpdate = null
+        banner.stop()
     }
 
     // Chấm đỏ: số tin nhắn chưa đọc và số thông báo chưa đọc
