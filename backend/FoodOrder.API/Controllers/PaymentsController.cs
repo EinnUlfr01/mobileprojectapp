@@ -61,6 +61,9 @@ public class PaymentsController(AppDbContext db, VnPayService vnPay) : Controlle
             if (!o.IsPaid)
             {
                 o.IsPaid = true;
+                if (o.UserId != null)
+                    NotificationsController.Add(db, o.UserId.Value, $"Thanh toán thành công #{o.Code}",
+                        $"Đã nhận {o.Total:N0}đ qua VNPay.", o.Id);
                 await db.SaveChangesAsync();
             }
             return Page("Thanh toán thành công", $"Đơn #{o.Code} đã thanh toán {o.Total:N0}đ qua VNPay.", true);

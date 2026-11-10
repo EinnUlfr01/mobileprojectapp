@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp" android:background="@drawable/bg_card" android:orientation="horizontal" android:padding="14dp">
+    <View android:id="@+id/dot" android:layout_width="10dp" android:layout_height="10dp"
+        android:layout_marginTop="6dp" android:layout_marginEnd="10dp" android:background="@drawable/bg_unread" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+        <TextView android:id="@+id/tvTitle" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textColor="@color/ink" android:textSize="15sp" android:textStyle="bold" />
+        <TextView android:id="@+id/tvBody" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="2dp" android:textColor="@color/ink" android:textSize="14sp" />
+        <TextView android:id="@+id/tvTime" style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:textSize="12sp" />
+    </LinearLayout>
+</LinearLayout>

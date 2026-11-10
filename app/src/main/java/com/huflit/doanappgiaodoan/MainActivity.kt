@@ -1,7 +1,12 @@
 package com.huflit.doanappgiaodoan
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.huflit.doanappgiaodoan.data.Session
@@ -16,6 +21,9 @@ import com.huflit.doanappgiaodoan.ui.user.CartActivity
 import com.huflit.doanappgiaodoan.ui.user.OrderHistoryActivity
 import com.huflit.doanappgiaodoan.ui.user.ProfileActivity
 import com.huflit.doanappgiaodoan.ui.user.SearchActivity
+import com.huflit.doanappgiaodoan.ui.chat.ChatActivity
+import com.huflit.doanappgiaodoan.ui.user.NotificationsActivity
+import com.huflit.doanappgiaodoan.util.AppPoller
 import com.huflit.doanappgiaodoan.util.api
 
 // Trang chủ: dùng chung cho user và khách vãng lai (kiểm tra Session.isLoggedIn)
@@ -24,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private val categoryAdapter = CategoryChipAdapter { Nav.category(this, it.id, it.name) }
     private val bestAdapter = ProductCardAdapter { Nav.product(this, it.id) }
     private val newAdapter = ProductRowAdapter { Nav.product(this, it.id) }
+    private val askNotification = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +51,19 @@ class MainActivity : AppCompatActivity() {
         b.tvGuestBanner.setOnClickListener { startActivity(Intent(this, RegisterActivity::class.java)) }
         b.swipe.setOnRefreshListener { loadData() }
 
+        // Chat với cửa hàng: khách vãng lai phải đăng nhập trước
+        b.btnChat.setOnClickListener {
+            if (Session.isLoggedIn) ChatActivity.openForCustomer(this)
+            else AlertDialog.Builder(this).setTitle("Cần đăng nhập")
+                .setMessage("Đăng nhập để chat trực tuyến với cửa hàng và xem lại lịch sử tin nhắn.")
+                .setPositiveButton("Đăng nhập") { _, _ -> startActivity(Intent(this, LoginActivity::class.java)) }
+                .setNegativeButton("Để sau", null).show()
+        }
+        b.btnBell.setOnClickListener { startActivity(Intent(this, NotificationsActivity::class.java)) }
+
+        // Android 13+ hỏi quyền hiện thông báo (đơn đổi trạng thái, tin nhắn mới)
+        if (Session.isLoggedIn && Build.VERSION.SDK_INT >= 33) askNotification.launch(Manifest.permission.POST_NOTIFICATIONS)
+
         setupBottomNav()
         loadData()
     }
@@ -49,6 +71,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         b.bottomNav.menu.findItem(R.id.nav_home)?.isChecked = true
+        b.btnBell.visibility = if (Session.isLoggedIn) android.view.View.VISIBLE else android.view.View.GONE
+        refreshBadges()
+        AppPoller.onUpdate = { refreshBadges() }
         val user = Session.user
         if (Session.isLoggedIn && user != null) {
             b.tvHello.text = "Xin chào"
@@ -62,6 +87,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Thanh dưới: khách thì có nút Đăng nhập thay cho Đơn hàng / Tài khoản
+    override fun onPause() {
+        super.onPause()
+        AppPoller.onUpdate = null
+    }
+
+    // Chấm đỏ: số tin nhắn chưa đọc và số thông báo chưa đọc
+    private fun refreshBadges() {
+        if (!Session.isLoggedIn) {
+            showBadge(b.tvChatBadge, 0); showBadge(b.tvBellBadge, 0); return
+        }
+        api({ chatUnread() }, onError = {}) { showBadge(b.tvChatBadge, it.count) }
+        api({ notificationUnread() }, onError = {}) { showBadge(b.tvBellBadge, it.count) }
+    }
+
+    private fun showBadge(tv: TextView, count: Int) {
+        tv.text = if (count > 9) "9+" else count.toString()
+        tv.visibility = if (count > 0) android.view.View.VISIBLE else android.view.View.GONE
+    }
+
     private fun setupBottomNav() {
         b.bottomNav.menu.clear()
         b.bottomNav.inflateMenu(if (Session.isLoggedIn) R.menu.menu_bottom_user else R.menu.menu_bottom_guest)

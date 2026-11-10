@@ -30,6 +30,8 @@ class ProfileActivity : AppCompatActivity() {
         api({ me() }) { u -> show(u); Session.user = u }
 
         b.btnSave.setOnClickListener { saveProfile() }
+        b.btnFavorites.setOnClickListener { startActivity(Intent(this, FavoritesActivity::class.java)) }
+        b.btnChat.setOnClickListener { com.huflit.doanappgiaodoan.ui.chat.ChatActivity.openForCustomer(this) }
         b.btnPassword.setOnClickListener { showChangePassword() }
         b.btnLogout.setOnClickListener {
             AlertDialog.Builder(this).setTitle("Đăng xuất?")

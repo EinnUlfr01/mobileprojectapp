@@ -51,6 +51,18 @@ class OrderDetailActivity : AppCompatActivity() {
         b.listView.addFooterView(footer.root, null, false)
         b.listView.adapter = adapter
 
+        // Đặt lại: cho các món của đơn này vào giỏ rồi mở giỏ hàng
+        b.btnReorder.setOnClickListener {
+            api({ reorder(orderId) }) {
+                toast(it.message ?: "Đã thêm vào giỏ")
+                startActivity(Intent(this, CartActivity::class.java))
+            }
+        }
+        // Mở chat với cửa hàng, điền sẵn mã đơn
+        b.btnChatOrder.setOnClickListener {
+            val code = current?.code ?: return@setOnClickListener
+            com.huflit.doanappgiaodoan.ui.chat.ChatActivity.openForCustomer(this, "Mình cần hỗ trợ đơn #$code: ")
+        }
         b.btnPay.setOnClickListener {
             api({ payOrder(orderId) }) { link -> payLauncher.launch(link.paymentUrl) }
         }
@@ -78,6 +90,7 @@ class OrderDetailActivity : AppCompatActivity() {
                 "Thanh toán: ${o.paymentMethod} (${if (o.isPaid) "đã thanh toán" else "chưa thanh toán"})"
             footer.tvTotals.text = "Tạm tính: ${o.subtotal.toMoney()}\n" +
                 "Phí giao hàng: ${o.shippingFee.toMoney()}\n" +
+                (if (o.discount > 0) "Mã ${o.voucherCode}: -${o.discount.toMoney()}\n" else "") +
                 "Tổng thanh toán: ${o.total.toMoney()}"
             // Chỉ chủ đơn đánh giá được, và chỉ khi đơn hoàn thành
             val canReview = o.status == OrderStatus.DONE && !Session.isStaff
@@ -86,6 +99,7 @@ class OrderDetailActivity : AppCompatActivity() {
             // Đơn chưa trả tiền: cho thanh toán online bằng VNPay
             val canPay = !Session.isStaff && !o.isPaid && o.status != OrderStatus.CANCELLED && o.status != OrderStatus.DONE
             b.btnPay.visibility = if (canPay) View.VISIBLE else View.GONE
+            b.memberActions.visibility = if (!Session.isStaff) View.VISIBLE else View.GONE
         }
     }
 

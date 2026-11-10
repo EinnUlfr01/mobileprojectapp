@@ -59,6 +59,34 @@ interface ApiService {
     @PUT("api/products/{id}") suspend fun updateProduct(@Path("id") id: Int, @Body body: ProductRequest): ProductDto
     @DELETE("api/products/{id}") suspend fun deleteProduct(@Path("id") id: Int): MessageDto
 
+    // ---------- Chat trực tuyến ----------
+    @GET("api/chat/me") suspend fun myChat(@Query("afterId") afterId: Int = 0): ChatThreadDto
+    @POST("api/chat/me") suspend fun sendToShop(@Body body: SendMessageRequest): ChatMessageDto
+    @GET("api/chat/unread") suspend fun chatUnread(): CountDto
+    @GET("api/chat/conversations") suspend fun conversations(@Query("q") q: String? = null): List<ConversationDto>
+    @GET("api/chat/conversations/{id}") suspend fun conversation(@Path("id") id: Int, @Query("afterId") afterId: Int = 0): ChatThreadDto
+    @POST("api/chat/conversations/{id}") suspend fun reply(@Path("id") id: Int, @Body body: SendMessageRequest): ChatMessageDto
+
+    // ---------- Thông báo ----------
+    @GET("api/notifications") suspend fun notifications(@Query("afterId") afterId: Int = 0): List<NotificationDto>
+    @GET("api/notifications/unread") suspend fun notificationUnread(): CountDto
+    @PUT("api/notifications/read-all") suspend fun readAllNotifications(): MessageDto
+    @GET("api/admin/alerts") suspend fun staffAlerts(): StaffAlertsDto
+
+    // ---------- Mã giảm giá ----------
+    @GET("api/vouchers") suspend fun vouchers(): List<VoucherDto>
+    @POST("api/vouchers/check") suspend fun checkVoucher(@Body body: CheckVoucherRequest): VoucherResultDto
+    @GET("api/vouchers/all") suspend fun allVouchers(): List<VoucherDto>
+    @POST("api/vouchers") suspend fun createVoucher(@Body body: VoucherRequest): VoucherDto
+    @PUT("api/vouchers/{id}") suspend fun updateVoucher(@Path("id") id: Int, @Body body: VoucherRequest): VoucherDto
+    @DELETE("api/vouchers/{id}") suspend fun deleteVoucher(@Path("id") id: Int): MessageDto
+
+    // ---------- Yêu thích, đặt lại ----------
+    @GET("api/favorites") suspend fun favorites(): List<ProductDto>
+    @POST("api/favorites/{productId}") suspend fun addFavorite(@Path("productId") productId: Int): MessageDto
+    @DELETE("api/favorites/{productId}") suspend fun removeFavorite(@Path("productId") productId: Int): MessageDto
+    @POST("api/orders/{id}/reorder") suspend fun reorder(@Path("id") id: Int): MessageDto
+
     // Upload ảnh từ điện thoại, trả về "uploads/xxx.jpg"
     @Multipart @POST("api/uploads") suspend fun upload(@Part file: MultipartBody.Part): UploadDto
 

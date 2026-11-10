@@ -46,6 +46,17 @@ fun String.toDisplayDate(): String = try {
     this.take(10)
 }
 
+// Giờ ngắn cho chat/thông báo: hôm nay chỉ hiện "14:05", ngày khác hiện "08/11 14:05"
+fun String.toShortTime(): String = try {
+    val input = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+    val date = input.parse(this.take(19))!!
+    val day = SimpleDateFormat("yyyyMMdd", Locale.US)
+    val sameDay = day.format(date) == day.format(java.util.Date())
+    SimpleDateFormat(if (sameDay) "HH:mm" else "dd/MM HH:mm", Locale.US).format(date)
+} catch (e: Exception) {
+    ""
+}
+
 fun ratingText(avg: Double, count: Int): String =
     if (count == 0) "Chưa có đánh giá" else "★ %.1f (%d)".format(Locale.US, avg, count)
 

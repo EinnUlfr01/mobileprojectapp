@@ -35,14 +35,21 @@ class ProductDetailActivity : AppCompatActivity() {
     private lateinit var b: ActivityProductDetailBinding
     private var current: ProductDto? = null
     private var qty = 1
+    private var isFavorite = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         b = ActivityProductDetailBinding.inflate(layoutInflater)
         setContentView(b.root)
         setupToolbar(b.toolbar, "Chi tiết món")
-        b.toolbar.inflateMenu(R.menu.menu_cart)
-        b.toolbar.setOnMenuItemClickListener { startActivity(Intent(this, CartActivity::class.java)); true }
+        b.toolbar.inflateMenu(R.menu.menu_product)
+        b.toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_favorite -> toggleFavorite()
+                else -> startActivity(Intent(this, CartActivity::class.java))
+            }
+            true
+        }
 
         b.rvReviews.layoutManager = LinearLayoutManager(this)
         b.btnMinus.setOnClickListener { if (qty > 1) { qty--; updatePrice() } }
@@ -61,6 +68,8 @@ class ProductDetailActivity : AppCompatActivity() {
         api({ product(id) }) { detail ->
             val p = detail.product
             current = p
+            isFavorite = detail.isFavorite
+            updateHeart()
             b.toolbar.title = p.name
             b.tvName.text = p.name
             b.tvDesc.text = p.description ?: ""
@@ -109,11 +118,28 @@ class ProductDetailActivity : AppCompatActivity() {
         }
     }
 
+    // Bấm trái tim: thêm / bỏ món yêu thích (chỉ thành viên)
+    private fun toggleFavorite() {
+        val p = current ?: return
+        if (!Session.isLoggedIn) { showLoginRequired(); return }
+        val adding = !isFavorite
+        isFavorite = adding
+        updateHeart()
+        api({ if (adding) addFavorite(p.id) else removeFavorite(p.id) },
+            onError = { isFavorite = !adding; updateHeart(); toast(it) }) {
+            toast(if (adding) "Đã thêm vào món yêu thích" else "Đã bỏ khỏi món yêu thích")
+        }
+    }
+
+    private fun updateHeart() {
+        b.toolbar.menu.findItem(R.id.action_favorite)?.setIcon(if (isFavorite) R.drawable.ic_heart else R.drawable.ic_heart_outline)
+    }
+
     // Dialog yêu cầu đăng nhập (khách vãng lai)
     private fun showLoginRequired() {
         AlertDialog.Builder(this)
             .setTitle("Cần đăng nhập")
-            .setMessage("Khách vẫn đặt món được. Riêng đánh giá món và xem lịch sử đơn thì cần có tài khoản.")
+            .setMessage("Khách vẫn đặt món được. Riêng đánh giá món, lưu món yêu thích và xem lịch sử đơn thì cần có tài khoản.")
             .setPositiveButton("Đăng nhập") { _, _ -> startActivity(Intent(this, LoginActivity::class.java)) }
             .setNeutralButton("Đăng ký") { _, _ -> startActivity(Intent(this, RegisterActivity::class.java)) }
             .setNegativeButton("Để sau", null)

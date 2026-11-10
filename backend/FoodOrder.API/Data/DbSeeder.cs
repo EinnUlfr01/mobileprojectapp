@@ -13,6 +13,8 @@ public static class DbSeeder
 
         // Tự tạo database + bảng nếu chưa có (không cần chạy migration)
         await db.Database.EnsureCreatedAsync();
+        await SchemaUpgrade.RunAsync(db);     // thêm bảng/cột mới cho database cũ
+        await SeedVouchersAsync(db);
         if (await db.Users.AnyAsync())
         {
             await EnsureStaffAsync(db, hasher);
@@ -115,6 +117,17 @@ public static class DbSeeder
         }
         await db.SaveChangesAsync();
         await FillImagesAsync(sp, db);
+    }
+
+    // Mã giảm giá mẫu
+    private static async Task SeedVouchersAsync(AppDbContext db)
+    {
+        if (await db.Vouchers.AnyAsync()) return;
+        db.Vouchers.AddRange(
+            new Voucher { Code = "GIAM20", Description = "Giảm 20% tối đa 30.000đ cho đơn từ 100.000đ", Type = VoucherType.Percent, Value = 20, MinOrder = 100000, MaxDiscount = 30000 },
+            new Voucher { Code = "GIAM10K", Description = "Giảm 10.000đ cho đơn từ 50.000đ", Type = VoucherType.Amount, Value = 10000, MinOrder = 50000 },
+            new Voucher { Code = "FREESHIP", Description = "Miễn phí giao hàng cho mọi đơn", Type = VoucherType.FreeShip, Value = 0, UsageLimit = 100 });
+        await db.SaveChangesAsync();
     }
 
     // Tài khoản mẫu cho 2 vai trò quản trị phụ (thêm vào cả database đã có sẵn)

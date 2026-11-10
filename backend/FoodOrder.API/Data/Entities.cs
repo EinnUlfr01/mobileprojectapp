@@ -102,6 +102,8 @@ public class Order
     public decimal Subtotal { get; set; }
     public decimal ShippingFee { get; set; }
     public decimal Total { get; set; }
+    public string? VoucherCode { get; set; }   // mã giảm giá đã dùng
+    public decimal Discount { get; set; }      // số tiền được giảm (gồm cả giảm phí ship)
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<OrderItem> Items { get; set; } = new();
 }
@@ -130,5 +132,77 @@ public class Review
     public int OrderId { get; set; }
     public int Stars { get; set; }
     public string? Comment { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// ================= Chức năng nâng cao =================
+
+// Bảng HoiThoai: mỗi khách hàng có 1 cuộc trò chuyện với cửa hàng
+public class Conversation
+{
+    public int Id { get; set; }
+    public int CustomerId { get; set; }
+    public User? Customer { get; set; }
+    public string? LastMessage { get; set; }
+    public DateTime LastMessageAt { get; set; } = DateTime.UtcNow;
+    public int UnreadByStaff { get; set; }      // số tin khách gửi mà cửa hàng chưa đọc
+    public int UnreadByCustomer { get; set; }   // số tin cửa hàng gửi mà khách chưa đọc
+    public List<ChatMessage> Messages { get; set; } = new();
+}
+
+// Bảng TinNhan
+public class ChatMessage
+{
+    public int Id { get; set; }
+    public int ConversationId { get; set; }
+    public int SenderId { get; set; }           // không ràng buộc khóa ngoại để xóa nhân viên vẫn giữ lịch sử
+    public string SenderName { get; set; } = "";
+    public bool IsFromStaff { get; set; }
+    public string Content { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Bảng ThongBao: báo cho khách khi đơn đổi trạng thái
+public class Notification
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string Title { get; set; } = "";
+    public string Body { get; set; } = "";
+    public int? OrderId { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Bảng MaGiamGia
+public static class VoucherType
+{
+    public const string Percent = "Percent";    // giảm % tạm tính, có mức giảm tối đa
+    public const string Amount = "Amount";      // giảm số tiền cố định
+    public const string FreeShip = "FreeShip";  // miễn phí giao hàng
+    public static readonly string[] All = { Percent, Amount, FreeShip };
+}
+
+public class Voucher
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Type { get; set; } = VoucherType.Amount;
+    public decimal Value { get; set; }          // % hoặc số tiền
+    public decimal MinOrder { get; set; }       // tạm tính tối thiểu
+    public decimal MaxDiscount { get; set; }    // giảm tối đa (0 = không giới hạn), dùng cho Percent
+    public int UsageLimit { get; set; }         // số lượt dùng tối đa (0 = không giới hạn)
+    public int UsedCount { get; set; }
+    public DateTime? ExpiresAt { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
+// Bảng YeuThich
+public class Favorite
+{
+    public int UserId { get; set; }
+    public int ProductId { get; set; }
+    public Product? Product { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

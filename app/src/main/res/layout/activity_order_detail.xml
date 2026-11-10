@@ -8,6 +8,14 @@
     <!-- ListView: các món trong đơn, phần thông tin đơn nằm ở header -->
     <ListView android:id="@+id/listView" android:layout_width="match_parent" android:layout_height="0dp"
         android:layout_weight="1" android:clipToPadding="false" android:divider="@null" android:padding="12dp" />
+    <LinearLayout android:id="@+id/memberActions" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:paddingStart="12dp" android:paddingTop="8dp" android:paddingEnd="12dp" android:visibility="gone">
+        <Button android:id="@+id/btnReorder" style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:text="Đặt lại" />
+        <Button android:id="@+id/btnChatOrder" style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1"
+            android:layout_marginStart="8dp" android:text="Hỏi cửa hàng" />
+    </LinearLayout>
     <Button android:id="@+id/btnPay" android:layout_width="match_parent" android:layout_height="52dp"
         android:layout_marginStart="12dp" android:layout_marginTop="12dp" android:layout_marginEnd="12dp"
         android:text="Thanh toán qua VNPay" android:visibility="gone" />

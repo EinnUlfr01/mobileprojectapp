@@ -61,14 +61,32 @@ public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerB
             });
         }
         order.Subtotal = order.Items.Sum(i => i.LineTotal);
-        order.Total = order.Subtotal + order.ShippingFee;
+
+        // Mã giảm giá
+        if (!string.IsNullOrWhiteSpace(r.VoucherCode))
+        {
+            var (discount, error) = await VouchersController.Calculate(db, r.VoucherCode, order.Subtotal, order.ShippingFee);
+            if (error != null) return BadRequest(new MessageDto(error));
+            order.VoucherCode = r.VoucherCode.Trim().ToUpper();
+            order.Discount = discount;
+            var v = await db.Vouchers.FirstAsync(x => x.Code == order.VoucherCode);
+            v.UsedCount++;
+        }
+        order.Total = order.Subtotal + order.ShippingFee - order.Discount;
         order.Code = "DH" + DateTime.UtcNow.AddHours(7).ToString("yyMMddHHmmss") + Random.Shared.Next(10, 99);
 
         db.Orders.Add(order);
         db.CartItems.RemoveRange(cartItems);
         await db.SaveChangesAsync();
         // Chọn VNPay: trả về link thanh toán để app mở trong WebView
-        var paymentUrl = order.PaymentMethod == PaymentsController.VnPayMethod ? vnPay.CreatePaymentUrl(order) : null;
+        // Đơn 0đ (voucher giảm hết) thì không cần thanh toán online
+        var paymentUrl = order.PaymentMethod == PaymentsController.VnPayMethod && order.Total > 0 ? vnPay.CreatePaymentUrl(order) : null;
+        if (uid != null)
+        {
+            NotificationsController.Add(db, uid.Value, $"Đặt hàng thành công #{order.Code}",
+                $"Đơn {order.Total:N0}đ đang chờ cửa hàng xác nhận.", order.Id);
+            await db.SaveChangesAsync();
+        }
         return order.ToDto() with { PaymentUrl = paymentUrl };
     }
 
@@ -112,6 +130,28 @@ public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerB
         o.PaymentMethod = PaymentsController.VnPayMethod;
         await db.SaveChangesAsync();
         return new PaymentLinkDto(vnPay.CreatePaymentUrl(o));
+    }
+
+    // Đặt lại: cho toàn bộ món của đơn cũ vào giỏ hàng (món/size không còn bán thì bỏ qua)
+    [HttpPost("{id:int}/reorder")]
+    [Authorize]
+    public async Task<ActionResult<MessageDto>> Reorder(int id)
+    {
+        var uid = User.UserId()!.Value;
+        var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && x.UserId == uid);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        int added = 0, skipped = 0;
+        foreach (var it in o.Items)
+        {
+            if (!await db.ProductSizes.AnyAsync(s => s.ProductId == it.ProductId && s.Size == it.Size)) { skipped++; continue; }
+            var c = await db.CartItems.FirstOrDefaultAsync(x => x.UserId == uid && x.ProductId == it.ProductId && x.Size == it.Size);
+            if (c != null) c.Quantity += it.Quantity;
+            else db.CartItems.Add(new CartItem { UserId = uid, ProductId = it.ProductId, Size = it.Size, Quantity = it.Quantity });
+            added++;
+        }
+        await db.SaveChangesAsync();
+        if (added == 0) return BadRequest(new MessageDto("Các món trong đơn này không còn bán"));
+        return new MessageDto(skipped == 0 ? "Đã thêm các món vào giỏ hàng" : $"Đã thêm {added} món, {skipped} món không còn bán");
     }
 
     // Người dùng tự hủy khi đơn còn "Đang xử lý"

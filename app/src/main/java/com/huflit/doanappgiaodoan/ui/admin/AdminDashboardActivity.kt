@@ -1,6 +1,9 @@
 package com.huflit.doanappgiaodoan.ui.admin
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
+import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +16,8 @@ import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.databinding.ActivityAdminDashboardBinding
 import com.huflit.doanappgiaodoan.databinding.ItemDashboardTileBinding
 import com.huflit.doanappgiaodoan.ui.auth.LoginActivity
+import com.huflit.doanappgiaodoan.ui.chat.ChatListActivity
+import com.huflit.doanappgiaodoan.util.AppPoller
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.toMoney
 
@@ -22,6 +27,9 @@ data class Tile(val title: String, val value: String, val desc: String, val targ
 class AdminDashboardActivity : AppCompatActivity() {
     private lateinit var b: ActivityAdminDashboardBinding
     private val adapter = TileAdapter()
+    private var stats: List<Tile>? = null
+    private var chatUnread = 0
+    private val askNotification = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,21 +51,40 @@ class AdminDashboardActivity : AppCompatActivity() {
                 }.setNegativeButton("Hủy", null).show()
         }
         showTiles(null)
+
+        // Android 13+ hỏi quyền hiện thông báo (đơn mới, tin nhắn mới)
+        if (Build.VERSION.SDK_INT >= 33) askNotification.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        AppPoller.onUpdate = null
+    }
+
+    // Số tin nhắn khách chưa được trả lời
+    private fun loadChatUnread() {
+        api({ chatUnread() }, onError = {}) {
+            chatUnread = it.count
+            showTiles(stats)
+        }
     }
 
     override fun onResume() {
         super.onResume()
+        loadChatUnread()
+        AppPoller.onUpdate = { loadChatUnread() }
         api({ dashboard() }) { d ->
             // Ô thống kê: chỉ dẫn tới màn mà vai trò hiện tại được vào
             val orders = if (Session.canManageOrders) ManageOrdersActivity::class.java else null
             val products = if (Session.canManageMenu) ManageProductsActivity::class.java else null
             val users = if (Session.canManageUsers) ManageUsersActivity::class.java else null
-            showTiles(listOf(
+            stats = listOf(
                 Tile("Tổng user", d.totalUsers.toString(), "Thành viên đã đăng ký", users),
                 Tile("Đơn hôm nay", d.ordersToday.toString(), "${d.pendingOrders} đơn chờ xử lý", orders),
                 Tile("Doanh thu tháng", d.revenueThisMonth.toMoney(), "Đơn đã hoàn thành", orders),
                 Tile("Số món", d.totalProducts.toString(), "Đang bán", products)
-            ))
+            )
+            showTiles(stats)
         }
     }
 
@@ -71,8 +98,13 @@ class AdminDashboardActivity : AppCompatActivity() {
             actions += Tile("Quản lý", "Danh mục", "Thêm, sửa, xóa danh mục", ManageCategoriesActivity::class.java)
             actions += Tile("Quản lý", "Sản phẩm", "Món ăn theo danh mục", ManageProductsActivity::class.java)
         }
+        if (Session.canManageMenu)
+            actions += Tile("Quản lý", "Mã giảm giá", "Tạo mã giảm %, giảm tiền, freeship", ManageVouchersActivity::class.java)
         if (Session.canManageOrders)
             actions += Tile("Quản lý", "Đơn hàng", "Trạng thái và thống kê", ManageOrdersActivity::class.java)
+        // Mọi vai trò quản trị đều trả lời chat của khách
+        actions += Tile("Chat trực tuyến", "Tin nhắn",
+            if (chatUnread > 0) "$chatUnread tin chưa trả lời" else "Trả lời khách hàng", ChatListActivity::class.java)
         val loading = listOf("Tổng user", "Đơn hôm nay", "Doanh thu tháng", "Số món").map { Tile(it, "…", "", null) }
         adapter.submit((stats ?: loading) + actions)
     }

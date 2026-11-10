@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:padding="24dp" android:text="Chưa có món yêu thích. Bấm biểu tượng trái tim ở trang chi tiết món để lưu." android:visibility="gone" />
+    <!-- GridView: món yêu thích 2 cột -->
+    <GridView android:id="@+id/gridView" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:clipToPadding="false" android:horizontalSpacing="8dp" android:numColumns="2"
+        android:padding="12dp" android:stretchMode="columnWidth" android:verticalSpacing="8dp" />
+</LinearLayout>

@@ -87,7 +87,10 @@ public class ProductsController(AppDbContext db) : ControllerBase
         var reviews = await db.Reviews.Where(r => r.ProductId == id).OrderByDescending(r => r.CreatedAt)
             .Select(r => new ReviewDto(r.Id, r.User!.FullName, r.Stars, r.Comment, r.CreatedAt))
             .ToListAsync();
-        return new ProductDetailDto(p.ToDto(), reviews);
+        // Đăng nhập rồi thì cho biết món này có trong danh sách yêu thích không
+        var uid = User.UserId();
+        var isFavorite = uid != null && await db.Favorites.AnyAsync(f => f.UserId == uid && f.ProductId == id);
+        return new ProductDetailDto(p.ToDto(), reviews, isFavorite);
     }
 
     // AddEditProductActivity

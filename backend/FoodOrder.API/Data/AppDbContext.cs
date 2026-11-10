@@ -12,6 +12,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Voucher> Vouchers => Set<Voucher>();
+    public DbSet<Favorite> Favorites => Set<Favorite>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -54,5 +59,39 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Review>().HasOne<Product>().WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<Review>().HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.NoAction);
         b.Entity<Review>().HasIndex(x => new { x.UserId, x.ProductId, x.OrderId }).IsUnique();
+
+        // ----- Nâng cao (database cũ được tạo thêm bằng SchemaUpgrade.cs) -----
+        b.Entity<Order>().Property(x => x.VoucherCode).HasMaxLength(30);
+        b.Entity<Order>().Property(x => x.Discount).HasPrecision(18, 0);
+
+        b.Entity<Conversation>().ToTable("HoiThoai");
+        b.Entity<Conversation>().HasIndex(x => x.CustomerId).IsUnique();
+        b.Entity<Conversation>().Property(x => x.LastMessage).HasMaxLength(1000);
+        b.Entity<Conversation>().HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<ChatMessage>().ToTable("TinNhan");
+        b.Entity<ChatMessage>().Property(x => x.Content).HasMaxLength(1000);
+        b.Entity<ChatMessage>().Property(x => x.SenderName).HasMaxLength(200);
+        b.Entity<Conversation>().HasMany(x => x.Messages).WithOne().HasForeignKey(x => x.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<ChatMessage>().HasIndex(x => new { x.ConversationId, x.Id });
+
+        b.Entity<Notification>().ToTable("ThongBao");
+        b.Entity<Notification>().Property(x => x.Title).HasMaxLength(200);
+        b.Entity<Notification>().Property(x => x.Body).HasMaxLength(500);
+        b.Entity<Notification>().HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Notification>().HasIndex(x => new { x.UserId, x.Id });
+
+        b.Entity<Voucher>().ToTable("MaGiamGia");
+        b.Entity<Voucher>().HasIndex(x => x.Code).IsUnique();
+        b.Entity<Voucher>().Property(x => x.Code).HasMaxLength(30);
+        b.Entity<Voucher>().Property(x => x.Description).HasMaxLength(300);
+        b.Entity<Voucher>().Property(x => x.Type).HasMaxLength(20);
+        foreach (var p in new[] { nameof(Voucher.Value), nameof(Voucher.MinOrder), nameof(Voucher.MaxDiscount) })
+            b.Entity<Voucher>().Property(p).HasPrecision(18, 0);
+
+        b.Entity<Favorite>().ToTable("YeuThich");
+        b.Entity<Favorite>().HasKey(x => new { x.UserId, x.ProductId });
+        b.Entity<Favorite>().HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Favorite>().HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
     }
 }

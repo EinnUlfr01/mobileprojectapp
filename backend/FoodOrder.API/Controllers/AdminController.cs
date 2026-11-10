@@ -138,11 +138,31 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
                 if (p != null) p.SoldCount = Math.Max(0, p.SoldCount + sign * it.Quantity);
             }
         }
+        var changed = o.Status != r.Status;
         o.Status = r.Status;
         if (isDone) o.IsPaid = true;
+        // Báo cho khách thành viên (khách vãng lai không có tài khoản nên quán gọi điện)
+        if (changed && o.UserId != null)
+        {
+            var body = r.Status switch
+            {
+                OrderStatus.Shipping => "Shipper đang trên đường giao món tới bạn.",
+                OrderStatus.Done => "Chúc bạn ngon miệng! Hãy đánh giá món để cửa hàng phục vụ tốt hơn.",
+                OrderStatus.Cancelled => "Đơn đã bị hủy. Liên hệ cửa hàng qua mục Chat nếu cần hỗ trợ.",
+                _ => "Cửa hàng đang chuẩn bị món của bạn."
+            };
+            NotificationsController.Add(db, o.UserId.Value, $"Đơn #{o.Code}: {r.Status}", body, o.Id);
+        }
         await db.SaveChangesAsync();
         return new MessageDto("Đã cập nhật trạng thái");
     }
+
+    // App nhân viên hỏi định kỳ để bắn thông báo khi có đơn mới / tin nhắn mới
+    [HttpGet("alerts")]
+    public async Task<StaffAlertsDto> Alerts() => new(
+        await db.Orders.CountAsync(o => o.Status == OrderStatus.Pending),
+        await db.Orders.MaxAsync(o => (int?)o.Id) ?? 0,
+        await db.Conversations.SumAsync(c => (int?)c.UnreadByStaff) ?? 0);
 
     // ---------- ManageOrderActivity: tab Thống kê ----------
     // groupBy: day | month | user | category ; from/to dạng yyyy-MM-dd (giờ VN). Chỉ tính đơn Hoàn thành.

@@ -45,10 +45,27 @@
             <RadioGroup android:id="@+id/rgPayment" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginTop="6dp" android:background="@drawable/bg_card" android:padding="8dp" />
 
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:text="Mã giảm giá" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                <EditText android:id="@+id/edtVoucher" android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_weight="1" android:background="@drawable/bg_card" android:hint="Nhập mã, VD: GIAM20"
+                    android:importantForAutofill="no" android:inputType="textCapCharacters" android:maxLength="30"
+                    android:paddingStart="14dp" android:paddingEnd="14dp" />
+                <Button android:id="@+id/btnApplyVoucher" android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginStart="8dp" android:text="Áp dụng" />
+            </LinearLayout>
+            <TextView android:id="@+id/tvVoucherMsg" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:textSize="13sp" android:visibility="gone" />
+            <TextView android:id="@+id/tvPickVoucher" android:layout_width="wrap_content" android:layout_height="40dp"
+                android:gravity="center_vertical" android:text="Xem mã đang có" android:textColor="@color/primary" android:textStyle="bold" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginTop="16dp" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="12dp">
                 <TextView android:id="@+id/tvSubtotal" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/ink" />
                 <TextView android:id="@+id/tvShip" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/ink" />
+                <TextView android:id="@+id/tvDiscount" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/danger" android:visibility="gone" />
                 <TextView android:id="@+id/tvTotal" android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="4dp" android:textColor="@color/primary" android:textSize="18sp" android:textStyle="bold" />
             </LinearLayout>

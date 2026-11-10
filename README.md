@@ -51,9 +51,25 @@ Muốn tạo lại dữ liệu từ đầu: xóa database `DoAnAppGiaoDoAn` tron
 3. Bấm **Run**. App gọi API qua `http://127.0.0.1:5090/` (cấu hình trong `app/.../data/ApiClient.kt`).
    Điện thoại thật cắm cáp USB cũng dùng lệnh adb reverse như trên.
 
+## Chức năng nâng cao
+
+| Chức năng | Mô tả | Màn hình |
+|---|---|---|
+| Chat trực tuyến | Khách nhắn tin với cửa hàng, mọi vai trò quản trị trả lời. App tự lấy tin mới mỗi 3 giây | ChatActivity (khách + nhân viên), ChatListActivity (nhân viên) |
+| Thông báo | Admin đổi trạng thái đơn, thanh toán VNPay xong → khách nhận thông báo trên điện thoại. Nhân viên được báo khi có đơn mới, tin nhắn mới | NotificationsActivity, chuông + chấm đỏ ở trang chủ |
+| Mã giảm giá | Giảm %, giảm tiền, freeship; có đơn tối thiểu, giảm tối đa, số lượt, hạn dùng. Mẫu: `GIAM20`, `GIAM10K`, `FREESHIP` | CheckoutActivity, ManageVouchersActivity |
+| Món yêu thích | Bấm trái tim ở chi tiết món | FavoritesActivity (GridView) |
+| Đặt lại đơn cũ | Cho toàn bộ món của đơn cũ vào giỏ | OrderDetailActivity |
+| Hỏi cửa hàng về đơn | Mở chat điền sẵn mã đơn | OrderDetailActivity |
+
+Thông báo chỉ chạy khi app đang mở (app hỏi server mỗi 8 giây). Android 13+ cần cho phép quyền thông báo khi app hỏi.
+
+Database cũ được tự thêm bảng/cột mới khi chạy API (`Data/SchemaUpgrade.cs`), không cần xóa database.
+
 ## 3. Các bảng CSDL
 
-NguoiDung, DanhMuc, SanPham, SanPhamSize, GioHang, DonHang (user_id cho phép null = khách vãng lai), ChiTietDonHang, DanhGia.
+NguoiDung, DanhMuc, SanPham, SanPhamSize, GioHang, DonHang (user_id cho phép null = khách vãng lai), ChiTietDonHang, DanhGia,
+HoiThoai, TinNhan (chat), ThongBao, MaGiamGia, YeuThich.
 
 ## 4. Activity và loại danh sách
 

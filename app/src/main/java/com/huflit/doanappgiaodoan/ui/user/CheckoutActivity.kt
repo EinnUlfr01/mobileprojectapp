@@ -5,9 +5,11 @@ import android.os.Bundle
 import android.view.View
 import android.widget.RadioButton
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.huflit.doanappgiaodoan.MainActivity
 import com.huflit.doanappgiaodoan.R
+import com.huflit.doanappgiaodoan.data.CheckVoucherRequest
 import com.huflit.doanappgiaodoan.data.CreateOrderRequest
 import com.huflit.doanappgiaodoan.data.GuestCart
 import com.huflit.doanappgiaodoan.data.OrderDto
@@ -27,6 +29,9 @@ class CheckoutActivity : AppCompatActivity() {
     private var lines: List<CartLine> = emptyList()
     private val shippingFee = 15000.0
     private var pendingOrder: OrderDto? = null
+    private var subtotal = 0.0
+    private var voucherCode: String? = null   // mã đã áp dụng thành công
+    private var discount = 0.0
 
     // Mở màn thanh toán VNPay, nhận kết quả thành công / thất bại
     private val payLauncher = registerForActivityResult(PaymentActivity.Contract()) { paid ->
@@ -63,6 +68,8 @@ class CheckoutActivity : AppCompatActivity() {
         }
 
         b.btnConfirm.setOnClickListener { confirm() }
+        b.btnApplyVoucher.setOnClickListener { applyVoucher(b.edtVoucher.text.toString()) }
+        b.tvPickVoucher.setOnClickListener { pickVoucher() }
     }
 
     private fun showLines(list: List<CartLine>) {
@@ -75,11 +82,53 @@ class CheckoutActivity : AppCompatActivity() {
                 setPadding(0, 6, 0, 6)
             })
         }
-        val subtotal = list.sumOf { it.lineTotal }
+        subtotal = list.sumOf { it.lineTotal }
+        updateTotals()
+        b.btnConfirm.isEnabled = list.isNotEmpty()
+    }
+
+    private fun updateTotals() {
         b.tvSubtotal.text = "Tạm tính: ${subtotal.toMoney()}"
         b.tvShip.text = "Phí giao hàng: ${shippingFee.toMoney()}"
-        b.tvTotal.text = "Tổng thanh toán: ${(subtotal + shippingFee).toMoney()}"
-        b.btnConfirm.isEnabled = list.isNotEmpty()
+        b.tvDiscount.text = "Mã $voucherCode: -${discount.toMoney()}"
+        b.tvDiscount.visibility = if (discount > 0) View.VISIBLE else View.GONE
+        b.tvTotal.text = "Tổng thanh toán: ${(subtotal + shippingFee - discount).coerceAtLeast(0.0).toMoney()}"
+    }
+
+    // Kiểm tra mã với server, đúng thì trừ tiền
+    private fun applyVoucher(raw: String) {
+        val code = raw.trim().uppercase()
+        if (code.isEmpty()) {
+            voucherCode = null; discount = 0.0; b.tvVoucherMsg.visibility = View.GONE; updateTotals(); return
+        }
+        api({ checkVoucher(CheckVoucherRequest(code, subtotal)) }, onError = { msg ->
+            voucherCode = null; discount = 0.0
+            showVoucherMsg(msg, false)
+            updateTotals()
+        }) { r ->
+            voucherCode = r.code; discount = r.discount
+            showVoucherMsg(r.message, true)
+            updateTotals()
+        }
+    }
+
+    private fun showVoucherMsg(msg: String, ok: Boolean) {
+        b.tvVoucherMsg.text = msg
+        b.tvVoucherMsg.setTextColor(getColor(if (ok) R.color.primary else R.color.danger))
+        b.tvVoucherMsg.visibility = View.VISIBLE
+    }
+
+    // Danh sách mã đang có, bấm để dùng
+    private fun pickVoucher() {
+        api({ vouchers() }) { list ->
+            if (list.isEmpty()) { toast("Hiện chưa có mã giảm giá"); return@api }
+            AlertDialog.Builder(this).setTitle("Mã giảm giá")
+                .setItems(list.map { "${it.code}\n${it.description}" }.toTypedArray()) { _, i ->
+                    b.edtVoucher.setText(list[i].code)
+                    applyVoucher(list[i].code)
+                }
+                .setNegativeButton("Đóng", null).show()
+        }
     }
 
     private fun confirm() {
@@ -100,7 +149,8 @@ class CheckoutActivity : AppCompatActivity() {
             note = b.edtNote.text.toString().trim().ifEmpty { null },
             paymentMethod = payment,
             // User: để null, server tự lấy giỏ hàng. Khách: gửi giỏ trên máy.
-            items = if (Session.isLoggedIn) null else lines.map { OrderLineRequest(it.productId, it.size, it.quantity) }
+            items = if (Session.isLoggedIn) null else lines.map { OrderLineRequest(it.productId, it.size, it.quantity) },
+            voucherCode = voucherCode
         )
 
         send(req)

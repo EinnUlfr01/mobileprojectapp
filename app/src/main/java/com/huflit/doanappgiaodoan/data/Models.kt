@@ -24,7 +24,7 @@ data class ProductDto(
     val avgRating: Double, val ratingCount: Int, val minPrice: Double, val sizes: List<SizeDto>
 )
 data class ReviewDto(val id: Int, val userName: String, val stars: Int, val comment: String?, val createdAt: String)
-data class ProductDetailDto(val product: ProductDto, val reviews: List<ReviewDto>)
+data class ProductDetailDto(val product: ProductDto, val reviews: List<ReviewDto>, val isFavorite: Boolean = false)
 data class ProductRequest(
     val categoryId: Int, val name: String, val description: String?, val imageUrl: String?,
     val isNew: Boolean, val sizes: List<SizeDto>
@@ -41,7 +41,8 @@ data class UpdateCartRequest(val quantity: Int)
 data class OrderLineRequest(val productId: Int, val size: String, val quantity: Int)
 data class CreateOrderRequest(
     val receiverName: String, val phone: String, val address: String, val note: String?,
-    val paymentMethod: String, val items: List<OrderLineRequest>?
+    val paymentMethod: String, val items: List<OrderLineRequest>?,
+    val voucherCode: String? = null
 )
 data class OrderItemDto(
     val productId: Int, val productName: String, val size: String, val quantity: Int,
@@ -52,7 +53,9 @@ data class OrderDto(
     val address: String, val note: String?, val paymentMethod: String, val isPaid: Boolean,
     val status: String, val subtotal: Double, val shippingFee: Double, val total: Double,
     val createdAt: String, val itemCount: Int, val items: List<OrderItemDto>,
-    val paymentUrl: String? = null
+    val paymentUrl: String? = null,
+    val voucherCode: String? = null,
+    val discount: Double = 0.0
 )
 data class PaymentLinkDto(val paymentUrl: String)
 data class UploadDto(val url: String)
@@ -100,4 +103,39 @@ object Role {
         ORDER_STAFF -> "Nhân viên đơn hàng"
         else -> "Thành viên"
     }
+}
+
+// ---------- Chat ----------
+data class ChatMessageDto(val id: Int, val isFromStaff: Boolean, val senderName: String, val content: String, val createdAt: String)
+data class ChatThreadDto(val conversationId: Int, val customerName: String, val messages: List<ChatMessageDto>)
+data class SendMessageRequest(val content: String)
+data class ConversationDto(
+    val id: Int, val customerId: Int, val customerName: String, val customerPhone: String,
+    val lastMessage: String?, val lastMessageAt: String, val unread: Int
+)
+data class CountDto(val count: Int)
+
+// ---------- Thông báo ----------
+data class NotificationDto(val id: Int, val title: String, val body: String, val orderId: Int?, val isRead: Boolean, val createdAt: String)
+data class StaffAlertsDto(val pendingOrders: Int, val latestOrderId: Int, val chatUnread: Int)
+
+// ---------- Mã giảm giá ----------
+data class VoucherDto(
+    val id: Int, val code: String, val description: String, val type: String, val value: Double,
+    val minOrder: Double, val maxDiscount: Double, val usageLimit: Int, val usedCount: Int,
+    val expiresAt: String?, val isActive: Boolean
+)
+data class VoucherRequest(
+    val code: String, val description: String, val type: String, val value: Double, val minOrder: Double,
+    val maxDiscount: Double, val usageLimit: Int, val expiresAt: String?, val isActive: Boolean
+)
+data class CheckVoucherRequest(val code: String, val subtotal: Double)
+data class VoucherResultDto(val code: String, val discount: Double, val message: String)
+
+object VoucherType {
+    const val PERCENT = "Percent"
+    const val AMOUNT = "Amount"
+    const val FREE_SHIP = "FreeShip"
+    val ALL = listOf(PERCENT, AMOUNT, FREE_SHIP)
+    fun label(t: String) = when (t) { PERCENT -> "Giảm %"; FREE_SHIP -> "Miễn phí ship"; else -> "Giảm tiền" }
 }

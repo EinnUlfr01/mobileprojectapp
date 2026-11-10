@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+ phải xin quyền mới hiện được thông báo -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".FoodApp"
@@ -37,6 +39,12 @@
         <activity android:name=".ui.user.CheckoutActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.user.OrderSuccessActivity" />
         <activity android:name=".ui.user.PaymentActivity" />
+        <activity android:name=".ui.user.NotificationsActivity" />
+        <activity android:name=".ui.user.FavoritesActivity" />
+
+        <!-- Chat trực tuyến (khách hàng và nhân viên dùng chung) -->
+        <activity android:name=".ui.chat.ChatActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.chat.ChatListActivity" />
         <activity android:name=".ui.user.OrderHistoryActivity" />
         <activity android:name=".ui.user.OrderDetailActivity" />
         <activity android:name=".ui.user.ReviewActivity" android:windowSoftInputMode="adjustResize" />
@@ -49,6 +57,7 @@
         <activity android:name=".ui.admin.ManageProductsActivity" />
         <activity android:name=".ui.admin.AddEditProductActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.admin.ManageOrdersActivity" />
+        <activity android:name=".ui.admin.ManageVouchersActivity" />
     </application>
 
 </manifest>

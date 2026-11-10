@@ -38,6 +38,14 @@
                 <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtAddress"
                     android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPostalAddress" />
             </com.google.android.material.textfield.TextInputLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="14dp" android:orientation="horizontal">
+                <Button android:id="@+id/btnFavorites" style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:text="Món yêu thích" />
+                <Button android:id="@+id/btnChat" style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1"
+                    android:layout_marginStart="8dp" android:text="Chat với cửa hàng" />
+            </LinearLayout>
             <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="56dp"
                 android:layout_marginTop="16dp" android:text="Lưu thay đổi" />
             <Button android:id="@+id/btnPassword" style="@style/Widget.Material3.Button.OutlinedButton"

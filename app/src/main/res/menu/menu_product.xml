@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/action_favorite" android:icon="@drawable/ic_heart_outline" android:title="Yêu thích"
+        app:showAsAction="always" app:iconTint="@color/danger" />
+    <item android:id="@+id/action_cart" android:icon="@drawable/ic_cart" android:title="Giỏ hàng"
+        app:showAsAction="always" app:iconTint="@color/ink" />
+</menu>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <SearchView android:id="@+id/searchView" android:layout_width="match_parent" android:layout_height="48dp"
+        android:layout_margin="12dp" android:background="@drawable/bg_card" android:iconifiedByDefault="false"
+        android:queryHint="Tìm theo tên, số điện thoại khách" />
+    <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:padding="24dp" android:text="Chưa có khách nào nhắn tin" android:visibility="gone" />
+    <!-- ListView: danh sách cuộc trò chuyện -->
+    <ListView android:id="@+id/listView" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:clipToPadding="false" android:divider="@null" android:paddingStart="12dp" android:paddingEnd="12dp" />
+</LinearLayout>

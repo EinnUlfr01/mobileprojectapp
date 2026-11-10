@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp" android:background="@drawable/bg_card"
+    android:gravity="center_vertical" android:orientation="horizontal" android:padding="12dp">
+    <TextView android:id="@+id/tvAvatar" android:layout_width="48dp" android:layout_height="48dp"
+        android:background="@drawable/bg_badge" android:gravity="center" android:textColor="@color/primary"
+        android:textSize="20sp" android:textStyle="bold" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+        android:layout_marginStart="12dp" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/tvName" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:maxLines="1" android:ellipsize="end" android:textColor="@color/ink" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tvTime" style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textSize="12sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="2dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <TextView android:id="@+id/tvLast" style="@style/Muted" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:ellipsize="end" android:maxLines="1" />
+            <TextView android:id="@+id/tvUnread" android:layout_width="wrap_content" android:layout_height="22dp"
+                android:minWidth="22dp" android:background="@drawable/bg_unread" android:gravity="center"
+                android:paddingStart="6dp" android:paddingEnd="6dp" android:textColor="@color/white"
+                android:textSize="12sp" android:textStyle="bold" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

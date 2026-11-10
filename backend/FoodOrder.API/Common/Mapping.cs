@@ -16,7 +16,11 @@ public static class Mapping
         o.Id, o.Code, o.UserId == null, o.ReceiverName, o.Phone, o.Address, o.Note, o.PaymentMethod, o.IsPaid,
         o.Status, o.Subtotal, o.ShippingFee, o.Total, o.CreatedAt, o.Items.Sum(i => i.Quantity),
         o.Items.Select(i => new OrderItemDto(i.ProductId, i.ProductName, i.Size, i.Quantity, i.UnitPrice, i.LineTotal,
-            reviewedProductIds?.Contains(i.ProductId) ?? false)).ToList());
+            reviewedProductIds?.Contains(i.ProductId) ?? false)).ToList(),
+        null, o.VoucherCode, o.Discount);
+
+    public static VoucherDto ToDto(this Voucher v) => new(v.Id, v.Code, v.Description, v.Type, v.Value, v.MinOrder,
+        v.MaxDiscount, v.UsageLimit, v.UsedCount, v.ExpiresAt, v.IsActive);
 
     public static bool IsValidPhone(string? phone) =>
         !string.IsNullOrWhiteSpace(phone) && phone.Length == 10 && phone.All(char.IsDigit) && phone[0] == '0';
