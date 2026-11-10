@@ -20,6 +20,7 @@ import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.databinding.ActivityProductDetailBinding
 import com.huflit.doanappgiaodoan.databinding.ItemReviewBinding
 import com.huflit.doanappgiaodoan.ui.Nav
+import com.huflit.doanappgiaodoan.ui.ProductCardAdapter
 import com.huflit.doanappgiaodoan.ui.auth.LoginActivity
 import com.huflit.doanappgiaodoan.ui.auth.RegisterActivity
 import com.huflit.doanappgiaodoan.util.ImageLoader
@@ -36,6 +37,7 @@ class ProductDetailActivity : AppCompatActivity() {
     private var current: ProductDto? = null
     private var qty = 1
     private var isFavorite = false
+    private val suggestAdapter = ProductCardAdapter { Nav.product(this, it.id) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +54,8 @@ class ProductDetailActivity : AppCompatActivity() {
         }
 
         b.rvReviews.layoutManager = LinearLayoutManager(this)
+        b.rvSuggest.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        b.rvSuggest.adapter = suggestAdapter
         b.btnMinus.setOnClickListener { if (qty > 1) { qty--; updatePrice() } }
         b.btnPlus.setOnClickListener { if (qty < 50) { qty++; updatePrice() } }
         b.rgSize.setOnCheckedChangeListener { _, _ -> updatePrice() }
@@ -90,6 +94,7 @@ class ProductDetailActivity : AppCompatActivity() {
                 if (s.size == "M" || (i == 0 && p.sizes.none { it.size == "M" })) rb.isChecked = true
             }
 
+            loadSuggestions(p)
             b.tvReviewTitle.text = "Đánh giá (${detail.reviews.size})"
             b.tvNoReview.visibility = if (detail.reviews.isEmpty()) View.VISIBLE else View.GONE
             b.rvReviews.adapter = ReviewAdapter(detail.reviews)
@@ -115,6 +120,17 @@ class ProductDetailActivity : AppCompatActivity() {
         } else {
             GuestCart.add(GuestCartItem(p.id, p.name, p.imageUrl, size, price, qty))
             toast("Đã thêm vào giỏ hàng")
+        }
+    }
+
+    // "Có thể bạn cũng thích": món bán chạy cùng danh mục, bỏ món đang xem
+    private fun loadSuggestions(p: ProductDto) {
+        api({ products(categoryId = p.categoryId, sort = "bestseller", take = 8) }, onError = {}) { list ->
+            val others = list.filter { it.id != p.id }.take(6)
+            suggestAdapter.submit(others)
+            val v = if (others.isEmpty()) View.GONE else View.VISIBLE
+            b.tvSuggestTitle.visibility = v
+            b.rvSuggest.visibility = v
         }
     }
 

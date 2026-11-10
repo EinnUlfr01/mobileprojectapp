@@ -12,6 +12,12 @@
         <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvMessages" android:layout_width="match_parent"
             android:layout_height="match_parent" android:clipToPadding="false" android:padding="12dp" />
     </FrameLayout>
+    <!-- Câu trả lời nhanh (bấm để điền vào ô nhập) -->
+    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/bg" android:scrollbars="none">
+        <LinearLayout android:id="@+id/llQuick" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingStart="8dp" android:paddingEnd="8dp" />
+    </HorizontalScrollView>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:background="@color/white" android:elevation="6dp" android:gravity="center_vertical"
         android:orientation="horizontal" android:padding="8dp">

@@ -9,6 +9,13 @@
         android:layout_margin="12dp" android:background="@drawable/bg_card" android:iconifiedByDefault="false"
         android:queryHint="Tìm món ăn, đồ uống…" />
 
+    <!-- Tìm kiếm gần đây + từ khóa phổ biến (hiện khi ô tìm kiếm trống) -->
+    <HorizontalScrollView android:id="@+id/suggestBar" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp" android:scrollbars="none">
+        <LinearLayout android:id="@+id/llSuggest" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="12dp" android:paddingEnd="12dp" />
+    </HorizontalScrollView>
+
     <!-- Khu vực lọc và sắp xếp -->
     <LinearLayout
         android:layout_width="match_parent"

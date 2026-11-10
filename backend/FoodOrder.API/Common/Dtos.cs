@@ -34,9 +34,11 @@ public record OrderItemDto(int ProductId, string ProductName, string Size, int Q
 public record OrderDto(int Id, string Code, bool IsGuest, string ReceiverName, string Phone, string Address, string? Note,
     string PaymentMethod, bool IsPaid, string Status, decimal Subtotal, decimal ShippingFee, decimal Total,
     DateTime CreatedAt, int ItemCount, List<OrderItemDto> Items, string? PaymentUrl = null,
-    string? VoucherCode = null, decimal Discount = 0);
+    string? VoucherCode = null, decimal Discount = 0, string? CancelReason = null, List<OrderLogDto>? History = null);
 public record PaymentLinkDto(string PaymentUrl);
-public record UpdateStatusRequest(string Status);
+public record UpdateStatusRequest(string Status, string? Note = null);
+public record CancelRequest(string? Reason);
+public record OrderLogDto(string Status, string? Note, string ChangedBy, DateTime CreatedAt);
 public record CreateReviewRequest(int OrderId, int ProductId, int Stars, string? Comment);
 
 // ---------- Admin ----------

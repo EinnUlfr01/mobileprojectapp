@@ -55,11 +55,15 @@ data class OrderDto(
     val createdAt: String, val itemCount: Int, val items: List<OrderItemDto>,
     val paymentUrl: String? = null,
     val voucherCode: String? = null,
-    val discount: Double = 0.0
+    val discount: Double = 0.0,
+    val cancelReason: String? = null,
+    val history: List<OrderLogDto>? = null
 )
+data class OrderLogDto(val status: String, val note: String?, val changedBy: String, val createdAt: String)
+data class CancelRequest(val reason: String?)
 data class PaymentLinkDto(val paymentUrl: String)
 data class UploadDto(val url: String)
-data class UpdateStatusRequest(val status: String)
+data class UpdateStatusRequest(val status: String, val note: String? = null)
 data class CreateReviewRequest(val orderId: Int, val productId: Int, val stars: Int, val comment: String?)
 
 data class DashboardDto(

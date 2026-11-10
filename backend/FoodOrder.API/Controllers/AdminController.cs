@@ -141,6 +141,15 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         var changed = o.Status != r.Status;
         o.Status = r.Status;
         if (isDone) o.IsPaid = true;
+        var note = string.IsNullOrWhiteSpace(r.Note) ? null : r.Note.Trim();
+        if (note?.Length > 300) note = note[..300];
+        if (r.Status == OrderStatus.Cancelled) o.CancelReason = note ?? "Cửa hàng hủy đơn";
+        if (changed)
+        {
+            // Ghi lịch sử để khách theo dõi đơn theo dòng thời gian
+            var staff = await db.Users.FindAsync(User.UserId());
+            db.OrderStatusLogs.Add(new OrderStatusLog { OrderId = o.Id, Status = r.Status, Note = note, ChangedBy = staff?.FullName ?? "Cửa hàng" });
+        }
         // Báo cho khách thành viên (khách vãng lai không có tài khoản nên quán gọi điện)
         if (changed && o.UserId != null)
         {
@@ -148,7 +157,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
             {
                 OrderStatus.Shipping => "Shipper đang trên đường giao món tới bạn.",
                 OrderStatus.Done => "Chúc bạn ngon miệng! Hãy đánh giá món để cửa hàng phục vụ tốt hơn.",
-                OrderStatus.Cancelled => "Đơn đã bị hủy. Liên hệ cửa hàng qua mục Chat nếu cần hỗ trợ.",
+                OrderStatus.Cancelled => $"Đơn đã bị hủy: {o.CancelReason}. Liên hệ cửa hàng qua mục Chat nếu cần hỗ trợ.",
                 _ => "Cửa hàng đang chuẩn bị món của bạn."
             };
             NotificationsController.Add(db, o.UserId.Value, $"Đơn #{o.Code}: {r.Status}", body, o.Id);

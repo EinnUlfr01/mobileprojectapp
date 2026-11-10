@@ -15,6 +15,19 @@
             android:layout_width="wrap_content" android:layout_height="44dp" android:text="Đăng xuất"
             android:textColor="@color/white" app:strokeColor="@color/white" />
     </LinearLayout>
+    <!-- Biểu đồ doanh thu 7 ngày (chỉ hiện với Quản trị viên và Nhân viên đơn hàng) -->
+    <LinearLayout android:id="@+id/chartCard" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginStart="14dp" android:layout_marginTop="14dp" android:layout_marginEnd="14dp"
+        android:background="@drawable/bg_card" android:orientation="vertical" android:padding="12dp" android:visibility="gone">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="Doanh thu 7 ngày gần nhất" android:textColor="@color/ink" android:textStyle="bold" />
+            <TextView android:id="@+id/tvWeekTotal" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="@color/primary" android:textStyle="bold" />
+        </LinearLayout>
+        <com.huflit.doanappgiaodoan.ui.admin.BarChartView android:id="@+id/chart"
+            android:layout_width="match_parent" android:layout_height="150dp" android:layout_marginTop="8dp" />
+    </LinearLayout>
     <!-- GridView: 4 ô thống kê + 4 nút quản lý (lưới 2 cột) -->
     <GridView android:id="@+id/gridView" android:layout_width="match_parent" android:layout_height="match_parent"
         android:clipToPadding="false" android:horizontalSpacing="10dp" android:numColumns="2"

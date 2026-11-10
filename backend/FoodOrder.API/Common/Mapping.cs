@@ -17,7 +17,9 @@ public static class Mapping
         o.Status, o.Subtotal, o.ShippingFee, o.Total, o.CreatedAt, o.Items.Sum(i => i.Quantity),
         o.Items.Select(i => new OrderItemDto(i.ProductId, i.ProductName, i.Size, i.Quantity, i.UnitPrice, i.LineTotal,
             reviewedProductIds?.Contains(i.ProductId) ?? false)).ToList(),
-        null, o.VoucherCode, o.Discount);
+        null, o.VoucherCode, o.Discount, o.CancelReason,
+        o.History.OrderBy(h => h.CreatedAt).ThenBy(h => h.Id)
+            .Select(h => new OrderLogDto(h.Status, h.Note, h.ChangedBy, h.CreatedAt)).ToList());
 
     public static VoucherDto ToDto(this Voucher v) => new(v.Id, v.Code, v.Description, v.Type, v.Value, v.MinOrder,
         v.MaxDiscount, v.UsageLimit, v.UsedCount, v.ExpiresAt, v.IsActive);

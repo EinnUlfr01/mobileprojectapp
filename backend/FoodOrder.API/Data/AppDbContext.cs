@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Voucher> Vouchers => Set<Voucher>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<OrderStatusLog> OrderStatusLogs => Set<OrderStatusLog>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -63,6 +64,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // ----- Nâng cao (database cũ được tạo thêm bằng SchemaUpgrade.cs) -----
         b.Entity<Order>().Property(x => x.VoucherCode).HasMaxLength(30);
         b.Entity<Order>().Property(x => x.Discount).HasPrecision(18, 0);
+        b.Entity<Order>().Property(x => x.CancelReason).HasMaxLength(300);
+
+        b.Entity<OrderStatusLog>().ToTable("LichSuDonHang");
+        b.Entity<OrderStatusLog>().Property(x => x.Status).HasMaxLength(30);
+        b.Entity<OrderStatusLog>().Property(x => x.Note).HasMaxLength(300);
+        b.Entity<OrderStatusLog>().Property(x => x.ChangedBy).HasMaxLength(200);
+        b.Entity<Order>().HasMany(x => x.History).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
 
         b.Entity<Conversation>().ToTable("HoiThoai");
         b.Entity<Conversation>().HasIndex(x => x.CustomerId).IsUnique();

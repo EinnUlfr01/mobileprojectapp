@@ -105,10 +105,33 @@ class ManageOrdersActivity : AppCompatActivity() {
                     startActivity(Intent(this, OrderDetailActivity::class.java).putExtra(Nav.EXTRA_ID, o.id))
                 } else {
                     val status = OrderStatus.ALL[which - 1]
-                    api({ updateOrderStatus(o.id, UpdateStatusRequest(status)) }) { toast("Đã chuyển sang $status"); loadOrders() }
+                    if (status == OrderStatus.CANCELLED) askCancelReason(o)
+                    else changeStatus(o, status, null)
                 }
             }
             .show()
+    }
+
+    private fun changeStatus(o: OrderDto, status: String, note: String?) {
+        api({ updateOrderStatus(o.id, UpdateStatusRequest(status, note)) }) { toast("Đã chuyển sang $status"); loadOrders() }
+    }
+
+    // Cửa hàng hủy đơn phải ghi lý do, khách sẽ thấy trong thông báo và dòng thời gian
+    private fun askCancelReason(o: OrderDto) {
+        val reasons = arrayOf("Hết món", "Quán sắp đóng cửa", "Không liên lạc được khách", "Ngoài khu vực giao hàng", "Lý do khác")
+        AlertDialog.Builder(this).setTitle("Lý do hủy đơn #${o.code}")
+            .setItems(reasons) { _, i ->
+                if (i < reasons.size - 1) changeStatus(o, OrderStatus.CANCELLED, reasons[i])
+                else {
+                    val input = android.widget.EditText(this).apply { hint = "Nhập lý do"; setPadding(48, 32, 48, 32) }
+                    AlertDialog.Builder(this).setTitle("Lý do hủy").setView(input)
+                        .setPositiveButton("Hủy đơn") { _, _ ->
+                            changeStatus(o, OrderStatus.CANCELLED, input.text.toString().trim().ifEmpty { "Lý do khác" })
+                        }
+                        .setNegativeButton("Quay lại", null).show()
+                }
+            }
+            .setNegativeButton("Không hủy", null).show()
     }
 
     private fun pickDate(cal: Calendar) {

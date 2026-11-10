@@ -103,6 +103,12 @@ public static class DbSeeder
             o.Subtotal = o.Items.Sum(x => x.LineTotal);
             o.Total = o.Subtotal + o.ShippingFee;
             o.IsPaid = o.PaymentMethod != "Tiền mặt" || o.Status == OrderStatus.Done;
+            // Lịch sử trạng thái mẫu cho dòng thời gian theo dõi đơn
+            o.History.Add(new OrderStatusLog { Status = OrderStatus.Pending, Note = "Đặt hàng thành công", ChangedBy = o.ReceiverName, CreatedAt = o.CreatedAt });
+            if (o.Status is OrderStatus.Shipping or OrderStatus.Done)
+                o.History.Add(new OrderStatusLog { Status = OrderStatus.Shipping, ChangedBy = "Quản trị viên", CreatedAt = o.CreatedAt.AddMinutes(15) });
+            if (o.Status == OrderStatus.Done)
+                o.History.Add(new OrderStatusLog { Status = OrderStatus.Done, ChangedBy = "Quản trị viên", CreatedAt = o.CreatedAt.AddMinutes(40) });
             db.Orders.Add(o);
         }
         await db.SaveChangesAsync();

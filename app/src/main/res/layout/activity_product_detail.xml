@@ -45,6 +45,13 @@
                         android:padding="0dp" android:text="+" android:textSize="20sp" />
                 </LinearLayout>
 
+                <!-- Gợi ý: món bán chạy cùng danh mục (RecyclerView ngang) -->
+                <TextView android:id="@+id/tvSuggestTitle" style="@style/SectionTitle" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Có thể bạn cũng thích"
+                    android:visibility="gone" />
+                <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvSuggest" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="6dp" android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false" android:visibility="gone" />
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="16dp" android:gravity="center_vertical" android:orientation="horizontal">
                     <TextView android:id="@+id/tvReviewTitle" style="@style/SectionTitle" android:layout_width="0dp"

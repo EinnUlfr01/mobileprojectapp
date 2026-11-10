@@ -104,8 +104,21 @@ public class Order
     public decimal Total { get; set; }
     public string? VoucherCode { get; set; }   // mã giảm giá đã dùng
     public decimal Discount { get; set; }      // số tiền được giảm (gồm cả giảm phí ship)
+    public string? CancelReason { get; set; }  // lý do hủy
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<OrderItem> Items { get; set; } = new();
+    public List<OrderStatusLog> History { get; set; } = new();
+}
+
+// Bảng LichSuDonHang: mỗi lần đơn đổi trạng thái (để vẽ dòng thời gian theo dõi đơn)
+public class OrderStatusLog
+{
+    public int Id { get; set; }
+    public int OrderId { get; set; }
+    public string Status { get; set; } = "";
+    public string? Note { get; set; }
+    public string ChangedBy { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 // Bảng ChiTietDonHang

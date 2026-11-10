@@ -10,6 +10,10 @@ import com.huflit.doanappgiaodoan.ui.ProductListAdapter
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import android.widget.AdapterView
+import android.widget.LinearLayout
+import android.widget.TextView
+import com.google.android.material.chip.Chip
+import com.huflit.doanappgiaodoan.R
 import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
 import com.huflit.doanappgiaodoan.data.ProductDto
@@ -27,7 +31,10 @@ class SearchActivity : AppCompatActivity() {
         setupToolbar(b.toolbar, "Tìm kiếm")
 
         b.listView.adapter = adapter
-        b.listView.setOnItemClickListener { _, _, position, _ -> Nav.product(this, adapter.getItem(position).id) }
+        b.listView.setOnItemClickListener { _, _, position, _ ->
+            saveHistory(b.searchView.query.toString())
+            Nav.product(this, adapter.getItem(position).id)
+        }
 
         // Danh sách lựa chọn sắp xếp
         val sortOptions = listOf(
@@ -77,8 +84,11 @@ class SearchActivity : AppCompatActivity() {
 
 
         b.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean { search(query); return true }
-            override fun onQueryTextChange(newText: String?): Boolean { search(newText); return true }
+            override fun onQueryTextSubmit(query: String?): Boolean { saveHistory(query); search(query); return true }
+            override fun onQueryTextChange(newText: String?): Boolean {
+                b.suggestBar.visibility = if (newText.isNullOrBlank()) View.VISIBLE else View.GONE
+                search(newText); return true
+            }
         })
 
         b.btnClearFilters.setOnClickListener {
@@ -92,6 +102,7 @@ class SearchActivity : AppCompatActivity() {
             showProducts()
         }
 
+        showSuggestions()
         b.searchView.requestFocus()
         search("")
     }
@@ -109,6 +120,48 @@ class SearchActivity : AppCompatActivity() {
             // Áp dụng bộ lọc và hiển thị
             showProducts()
         }
+    }
+
+    // ---------- Tìm kiếm gần đây (lưu trên máy) + từ khóa phổ biến ----------
+    private val prefs by lazy { getSharedPreferences("search_history", MODE_PRIVATE) }
+    private val popular = listOf("Cơm tấm", "Trà sữa", "Bún bò", "Gà rán", "Phở")
+
+    private fun history(): List<String> =
+        prefs.getString("items", "")!!.split("\n").filter { it.isNotBlank() }
+
+    private fun saveHistory(raw: String?) {
+        val q = raw?.trim().orEmpty()
+        if (q.length < 2) return
+        val list = (listOf(q) + history().filter { !it.equals(q, ignoreCase = true) }).take(8)
+        prefs.edit().putString("items", list.joinToString("\n")).apply()
+        showSuggestions()
+    }
+
+    private fun showSuggestions() {
+        b.llSuggest.removeAllViews()
+        val recent = history()
+        fun chip(text: String, onClick: () -> Unit) = Chip(this).apply {
+            this.text = text
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = 12 }
+            setOnClickListener { onClick() }
+        }
+        fun label(text: String) = TextView(this).apply {
+            this.text = text
+            setTextColor(getColor(R.color.muted))
+            setPadding(0, 0, 16, 0)
+        }
+        if (recent.isNotEmpty()) {
+            b.llSuggest.addView(label("Gần đây"))
+            recent.forEach { q -> b.llSuggest.addView(chip(q) { b.searchView.setQuery(q, true) }) }
+            b.llSuggest.addView(chip("Xóa lịch sử") {
+                prefs.edit().remove("items").apply()
+                showSuggestions()
+            })
+        }
+        b.llSuggest.addView(label(if (recent.isEmpty()) "Phổ biến" else "  Phổ biến"))
+        popular.forEach { q -> b.llSuggest.addView(chip(q) { b.searchView.setQuery(q, true) }) }
     }
 
     private fun showProducts() {

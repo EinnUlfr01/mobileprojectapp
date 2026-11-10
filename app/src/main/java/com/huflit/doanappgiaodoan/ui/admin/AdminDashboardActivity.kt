@@ -3,6 +3,9 @@ package com.huflit.doanappgiaodoan.ui.admin
 import android.Manifest
 import android.content.Intent
 import android.os.Build
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -61,6 +64,21 @@ class AdminDashboardActivity : AppCompatActivity() {
         AppPoller.onUpdate = null
     }
 
+    // Biểu đồ doanh thu 7 ngày: lấy thống kê theo ngày, ngày không có đơn thì = 0
+    private fun loadChart() {
+        if (!Session.canManageOrders) { b.chartCard.visibility = View.GONE; return }
+        val fmtQuery = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val fmtLabel = SimpleDateFormat("dd/MM", Locale.US)
+        val days = (6 downTo 0).map { Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, -it) }.time }
+        api({ stats("day", fmtQuery.format(days.first()), fmtQuery.format(days.last())) }, onError = {}) { s ->
+            val byLabel = s.rows.associate { it.label to it.revenue }
+            val labels = days.map { fmtLabel.format(it) }
+            b.chart.setData(labels, labels.map { byLabel[it] ?: 0.0 })
+            b.tvWeekTotal.text = s.totalRevenue.toMoney()
+            b.chartCard.visibility = View.VISIBLE
+        }
+    }
+
     // Số tin nhắn khách chưa được trả lời
     private fun loadChatUnread() {
         api({ chatUnread() }, onError = {}) {
@@ -72,6 +90,7 @@ class AdminDashboardActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadChatUnread()
+        loadChart()
         AppPoller.onUpdate = { loadChatUnread() }
         api({ dashboard() }) { d ->
             // Ô thống kê: chỉ dẫn tới màn mà vai trò hiện tại được vào

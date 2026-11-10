@@ -8,6 +8,9 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import androidx.core.widget.doAfterTextChanged
+import com.google.android.material.chip.Chip
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -51,7 +54,7 @@ class ChatActivity : AppCompatActivity() {
         setContentView(b.root)
         conversationId = intent.getIntExtra(EXTRA_CONVERSATION, 0)
         setupToolbar(b.toolbar, intent.getStringExtra(EXTRA_TITLE) ?: "Chat với cửa hàng")
-        if (!isStaffView) b.toolbar.subtitle = "Thường trả lời trong vài phút"
+        b.toolbar.subtitle = defaultSubtitle
 
         // Tin "của mình": khách -> tin không phải của nhân viên; nhân viên -> tin của nhân viên
         adapter = ChatAdapter(isMine = { m -> m.isFromStaff == isStaffView })
@@ -60,11 +63,61 @@ class ChatActivity : AppCompatActivity() {
 
         intent.getStringExtra(EXTRA_PREFILL)?.let { b.edtMessage.setText(it); b.edtMessage.setSelection(it.length) }
         b.btnSend.setOnClickListener { send() }
+
+        // Đang gõ -> báo cho bên kia hiện "đang nhập…"
+        b.edtMessage.doAfterTextChanged { text ->
+            if (!text.isNullOrBlank()) ChatRealtime.sendTyping(conversationId)
+        }
+        setupQuickReplies()
+    }
+
+    // Câu mẫu: nhân viên trả lời nhanh, khách hỏi nhanh
+    private fun setupQuickReplies() {
+        val quick = if (isStaffView) listOf(
+            "Dạ cửa hàng đã nhận đơn của bạn ạ",
+            "Món đang được chuẩn bị, khoảng 15 phút nữa giao ạ",
+            "Shipper đang trên đường giao tới bạn ạ",
+            "Dạ món này hôm nay tạm hết, bạn đổi món khác giúp quán nhé",
+            "Cảm ơn bạn đã ủng hộ quán!"
+        ) else listOf(
+            "Đơn của mình bao lâu nữa tới?",
+            "Mình muốn đổi địa chỉ giao hàng",
+            "Cho mình ít cay nhé",
+            "Quán còn mở cửa không ạ?",
+            "Món nào đang bán chạy vậy?"
+        )
+        quick.forEach { text ->
+            b.llQuick.addView(Chip(this).apply {
+                this.text = text
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = 12 }
+                setOnClickListener {
+                    b.edtMessage.setText(text)
+                    b.edtMessage.setSelection(text.length)
+                    b.edtMessage.requestFocus()
+                }
+            })
+        }
+    }
+
+    // Bên kia đang gõ: hiện "đang nhập…" trên thanh tiêu đề 3 giây
+    private val defaultSubtitle get() = if (isStaffView) null else "Thường trả lời trong vài phút"
+    private val clearTyping = Runnable { b.toolbar.subtitle = defaultSubtitle }
+    private val onTyping: (Int, Boolean) -> Unit = { convId, fromStaff ->
+        val fromOtherSide = fromStaff != isStaffView
+        if (fromOtherSide && (!isStaffView || convId == conversationId)) {
+            b.toolbar.subtitle = if (isStaffView) "Khách đang nhập…" else "Cửa hàng đang nhập…"
+            handler.removeCallbacks(clearTyping)
+            handler.postDelayed(clearTyping, 3000)
+        }
     }
 
     // Tin realtime: khách nhận mọi tin của mình; nhân viên chỉ nhận tin của cuộc trò chuyện đang mở
     private val onRealtime: (Int, ChatMessageDto) -> Unit = { convId, m ->
         if (!isStaffView || convId == conversationId) {
+            // Tin mới tới thì tắt "đang nhập…"
+            if (m.isFromStaff != isStaffView) { handler.removeCallbacks(clearTyping); b.toolbar.subtitle = defaultSubtitle }
             addMessages(listOf(m))
             // Đang xem thì gọi server để đánh dấu đã đọc
             fetch()
@@ -75,6 +128,7 @@ class ChatActivity : AppCompatActivity() {
         super.onResume()
         AppPoller.chatScreenOpen = true // đang mở màn chat thì không bắn thông báo tin nhắn
         ChatRealtime.addListener(onRealtime)
+        ChatRealtime.addTypingListener(onTyping)
         ChatRealtime.connect()
         handler.post(pollTask)
     }
@@ -83,7 +137,9 @@ class ChatActivity : AppCompatActivity() {
         super.onPause()
         AppPoller.chatScreenOpen = false
         ChatRealtime.removeListener(onRealtime)
+        ChatRealtime.removeTypingListener(onTyping)
         handler.removeCallbacks(pollTask)
+        handler.removeCallbacks(clearTyping)
     }
 
     private fun fetch() {

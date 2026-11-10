@@ -6,8 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.huflit.doanappgiaodoan.R
+import com.huflit.doanappgiaodoan.data.CancelRequest
 import com.huflit.doanappgiaodoan.data.OrderDto
 import com.huflit.doanappgiaodoan.data.OrderItemDto
 import com.huflit.doanappgiaodoan.data.OrderStatus
@@ -16,6 +19,7 @@ import com.huflit.doanappgiaodoan.databinding.ActivityOrderDetailBinding
 import com.huflit.doanappgiaodoan.databinding.FooterOrderDetailBinding
 import com.huflit.doanappgiaodoan.databinding.HeaderOrderDetailBinding
 import com.huflit.doanappgiaodoan.databinding.ItemOrderLineBinding
+import com.huflit.doanappgiaodoan.databinding.ItemTimelineBinding
 import com.huflit.doanappgiaodoan.ui.Nav
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
@@ -66,10 +70,57 @@ class OrderDetailActivity : AppCompatActivity() {
         b.btnPay.setOnClickListener {
             api({ payOrder(orderId) }) { link -> payLauncher.launch(link.paymentUrl) }
         }
-        b.btnCancel.setOnClickListener {
-            AlertDialog.Builder(this).setTitle("Hủy đơn?").setMessage("Bạn chắc chắn muốn hủy đơn này?")
-                .setPositiveButton("Hủy đơn") { _, _ -> api({ cancelOrder(orderId) }) { toast(it.message ?: "Đã hủy"); load() } }
-                .setNegativeButton("Không", null).show()
+        b.btnCancel.setOnClickListener { askCancelReason() }
+    }
+
+    // Hủy đơn: chọn lý do (lý do lưu vào đơn và hiện trên dòng thời gian)
+    private fun askCancelReason() {
+        val reasons = arrayOf("Đổi ý, không muốn đặt nữa", "Muốn đổi món hoặc đổi size", "Nhập sai địa chỉ / số điện thoại",
+            "Chờ lâu quá", "Lý do khác")
+        AlertDialog.Builder(this).setTitle("Vì sao bạn muốn hủy đơn?")
+            .setItems(reasons) { _, i ->
+                if (i < reasons.size - 1) confirmCancel(reasons[i])
+                else {
+                    val input = EditText(this).apply { hint = "Nhập lý do"; setPadding(48, 32, 48, 32) }
+                    AlertDialog.Builder(this).setTitle("Lý do hủy").setView(input)
+                        .setPositiveButton("Hủy đơn") { _, _ -> confirmCancel(input.text.toString().trim().ifEmpty { "Lý do khác" }) }
+                        .setNegativeButton("Quay lại", null).show()
+                }
+            }
+            .setNegativeButton("Không hủy", null).show()
+    }
+
+    private fun confirmCancel(reason: String) {
+        api({ cancelOrder(orderId, CancelRequest(reason)) }) { toast(it.message ?: "Đã hủy"); load() }
+    }
+
+    // Dòng thời gian theo dõi đơn: Đã đặt → Đang giao → Giao thành công (hoặc Đã đặt → Đã hủy)
+    private fun buildTimeline(o: OrderDto) {
+        header.llTimeline.removeAllViews()
+        val history = o.history.orEmpty()
+        val cancelled = o.status == OrderStatus.CANCELLED
+        val steps = if (cancelled) listOf(OrderStatus.PENDING to "Đã đặt hàng", OrderStatus.CANCELLED to "Đơn đã hủy")
+        else listOf(OrderStatus.PENDING to "Đã đặt hàng, chờ cửa hàng chuẩn bị", OrderStatus.SHIPPING to "Đang giao hàng",
+            OrderStatus.DONE to "Giao thành công")
+        val current = steps.indexOfFirst { it.first == o.status }.coerceAtLeast(0)
+        val green = getColor(R.color.primary)
+        val red = getColor(R.color.danger)
+        val grey = getColor(R.color.line)
+
+        steps.forEachIndexed { i, (status, title) ->
+            val item = ItemTimelineBinding.inflate(layoutInflater, header.llTimeline, false)
+            val reached = i <= current
+            val log = history.lastOrNull { it.status == status }
+            val time = log?.createdAt?.toDisplayDate() ?: if (i == 0) o.createdAt.toDisplayDate() else null
+            val note = log?.note ?: if (status == OrderStatus.CANCELLED) o.cancelReason else null
+            val by = log?.changedBy?.takeIf { status != OrderStatus.PENDING }?.let { "bởi $it" }
+            item.tvTitle.text = title
+            item.tvTitle.setTextColor(getColor(if (reached) R.color.ink else R.color.muted))
+            item.tvSub.text = if (reached) listOfNotNull(time, by, note).joinToString(" · ") else "Đang chờ"
+            item.dot.background.mutate().setTint(if (!reached) grey else if (status == OrderStatus.CANCELLED) red else green)
+            item.line.setBackgroundColor(if (i < current) green else grey)
+            item.line.visibility = if (i == steps.size - 1) View.INVISIBLE else View.VISIBLE
+            header.llTimeline.addView(item.root)
         }
     }
 
@@ -83,6 +134,7 @@ class OrderDetailActivity : AppCompatActivity() {
             current = o
             b.toolbar.title = "Đơn #${o.code}"
             header.tvStatus.text = o.status
+            buildTimeline(o)
             header.tvInfo.text = "Ngày đặt: ${o.createdAt.toDisplayDate()}\n" +
                 "Người nhận: ${o.receiverName} · ${o.phone}\n" +
                 "Địa chỉ: ${o.address}\n" +

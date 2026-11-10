@@ -75,6 +75,7 @@ public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerB
         order.Total = order.Subtotal + order.ShippingFee - order.Discount;
         order.Code = "DH" + DateTime.UtcNow.AddHours(7).ToString("yyMMddHHmmss") + Random.Shared.Next(10, 99);
 
+        order.History.Add(new OrderStatusLog { Status = OrderStatus.Pending, Note = "Đặt hàng thành công", ChangedBy = order.ReceiverName });
         db.Orders.Add(order);
         db.CartItems.RemoveRange(cartItems);
         await db.SaveChangesAsync();
@@ -107,7 +108,7 @@ public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerB
     [Authorize]
     public async Task<ActionResult<OrderDto>> Get(int id)
     {
-        var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id);
+        var o = await db.Orders.Include(x => x.Items).Include(x => x.History).FirstOrDefaultAsync(x => x.Id == id);
         if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
         var uid = User.UserId();
         var isOrderManager = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.OrderStaff);
@@ -157,13 +158,17 @@ public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerB
     // Người dùng tự hủy khi đơn còn "Đang xử lý"
     [HttpPut("{id:int}/cancel")]
     [Authorize]
-    public async Task<ActionResult<MessageDto>> Cancel(int id)
+    public async Task<ActionResult<MessageDto>> Cancel(int id, CancelRequest r)
     {
         var uid = User.UserId();
         var o = await db.Orders.FirstOrDefaultAsync(x => x.Id == id && x.UserId == uid);
         if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
         if (o.Status != OrderStatus.Pending) return BadRequest(new MessageDto("Chỉ hủy được đơn đang xử lý"));
+        var reason = string.IsNullOrWhiteSpace(r?.Reason) ? "Khách hủy đơn" : r.Reason.Trim();
+        if (reason.Length > 300) reason = reason[..300];
         o.Status = OrderStatus.Cancelled;
+        o.CancelReason = reason;
+        db.OrderStatusLogs.Add(new OrderStatusLog { OrderId = o.Id, Status = OrderStatus.Cancelled, Note = reason, ChangedBy = "Khách hàng" });
         await db.SaveChangesAsync();
         return new MessageDto("Đã hủy đơn");
     }

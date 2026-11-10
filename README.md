@@ -59,6 +59,13 @@ Muốn tạo lại dữ liệu từ đầu: xóa database `DoAnAppGiaoDoAn` tron
 | Thông báo | Admin đổi trạng thái đơn, thanh toán VNPay xong → khách nhận thông báo trên điện thoại. Nhân viên được báo khi có đơn mới, tin nhắn mới | NotificationsActivity, chuông + chấm đỏ ở trang chủ |
 | Mã giảm giá | Giảm %, giảm tiền, freeship; có đơn tối thiểu, giảm tối đa, số lượt, hạn dùng. Mẫu: `GIAM20`, `GIAM10K`, `FREESHIP` | CheckoutActivity, ManageVouchersActivity |
 | Món yêu thích | Bấm trái tim ở chi tiết món | FavoritesActivity (GridView) |
+| Theo dõi đơn hàng | Dòng thời gian Đã đặt → Đang giao → Giao thành công, có giờ và người cập nhật từng bước | OrderDetailActivity |
+| Hủy đơn có lý do | Khách và cửa hàng chọn lý do khi hủy, lý do hiện trên dòng thời gian và trong thông báo | OrderDetailActivity, ManageOrdersActivity |
+| Chat: đang nhập… | Bên kia gõ phím thì hiện "đang nhập…" realtime | ChatActivity |
+| Chat: trả lời nhanh | Câu mẫu cho nhân viên (đã nhận đơn, đang giao…) và câu hỏi nhanh cho khách | ChatActivity |
+| Biểu đồ doanh thu | Biểu đồ cột 7 ngày tự vẽ bằng Canvas (không dùng thư viện) | AdminDashboardActivity (BarChartView) |
+| Gợi ý món | "Có thể bạn cũng thích": món bán chạy cùng danh mục | ProductDetailActivity |
+| Lịch sử tìm kiếm | Tìm kiếm gần đây (lưu trên máy) + từ khóa phổ biến | SearchActivity |
 | Đặt lại đơn cũ | Cho toàn bộ món của đơn cũ vào giỏ | OrderDetailActivity |
 | Hỏi cửa hàng về đơn | Mở chat điền sẵn mã đơn | OrderDetailActivity |
 
@@ -69,7 +76,7 @@ Database cũ được tự thêm bảng/cột mới khi chạy API (`Data/Schema
 ## 3. Các bảng CSDL
 
 NguoiDung, DanhMuc, SanPham, SanPhamSize, GioHang, DonHang (user_id cho phép null = khách vãng lai), ChiTietDonHang, DanhGia,
-HoiThoai, TinNhan (chat), ThongBao, MaGiamGia, YeuThich.
+HoiThoai, TinNhan (chat), ThongBao, MaGiamGia, YeuThich, LichSuDonHang (theo dõi đơn).
 
 ## 4. Activity và loại danh sách
 

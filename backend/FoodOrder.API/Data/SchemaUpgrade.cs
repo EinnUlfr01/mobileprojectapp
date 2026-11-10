@@ -18,6 +18,24 @@ public static class SchemaUpgrade
             ALTER TABLE DonHang ADD Discount decimal(18,0) NOT NULL CONSTRAINT DF_DonHang_Discount DEFAULT 0;
         """,
         """
+        IF COL_LENGTH('DonHang', 'CancelReason') IS NULL
+            ALTER TABLE DonHang ADD CancelReason nvarchar(300) NULL;
+        """,
+        """
+        IF OBJECT_ID(N'LichSuDonHang', N'U') IS NULL
+        BEGIN
+        CREATE TABLE LichSuDonHang (
+            Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_LichSuDonHang PRIMARY KEY,
+            OrderId int NOT NULL CONSTRAINT FK_LichSuDonHang_DonHang_OrderId REFERENCES DonHang(Id) ON DELETE CASCADE,
+            Status nvarchar(30) NOT NULL,
+            Note nvarchar(300) NULL,
+            ChangedBy nvarchar(200) NOT NULL,
+            CreatedAt datetime2 NOT NULL
+        );
+        CREATE INDEX IX_LichSuDonHang_OrderId ON LichSuDonHang(OrderId);
+        END
+        """,
+        """
         IF OBJECT_ID(N'HoiThoai', N'U') IS NULL
         BEGIN
         CREATE TABLE HoiThoai (

@@ -40,7 +40,7 @@ interface ApiService {
     @POST("api/orders") suspend fun createOrder(@Body body: CreateOrderRequest): OrderDto
     @GET("api/orders/my") suspend fun myOrders(@Query("status") status: String? = null): List<OrderDto>
     @GET("api/orders/{id}") suspend fun order(@Path("id") id: Int): OrderDto
-    @PUT("api/orders/{id}/cancel") suspend fun cancelOrder(@Path("id") id: Int): MessageDto
+    @PUT("api/orders/{id}/cancel") suspend fun cancelOrder(@Path("id") id: Int, @Body body: CancelRequest): MessageDto
     @POST("api/orders/{id}/pay") suspend fun payOrder(@Path("id") id: Int): PaymentLinkDto
     @POST("api/reviews") suspend fun review(@Body body: CreateReviewRequest): MessageDto
 
