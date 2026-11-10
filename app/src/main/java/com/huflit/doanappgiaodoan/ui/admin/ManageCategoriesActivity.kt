@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.huflit.doanappgiaodoan.data.CategoryDto
@@ -13,6 +14,7 @@ import com.huflit.doanappgiaodoan.databinding.ActivityManageCategoriesBinding
 import com.huflit.doanappgiaodoan.databinding.DialogCategoryBinding
 import com.huflit.doanappgiaodoan.databinding.ItemAdminRowBinding
 import com.huflit.doanappgiaodoan.util.ImageLoader
+import com.huflit.doanappgiaodoan.util.ImageUpload
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import com.huflit.doanappgiaodoan.util.toast
@@ -21,6 +23,19 @@ import com.huflit.doanappgiaodoan.util.toast
 class ManageCategoriesActivity : AppCompatActivity() {
     private lateinit var b: ActivityManageCategoriesBinding
     private val adapter = CategoryAdminAdapter(onEdit = { showDialog(it) }, onDelete = { confirmDelete(it) })
+    private var openDialog: DialogCategoryBinding? = null
+
+    // Chọn ảnh danh mục từ điện thoại -> upload -> điền vào ô link ảnh của dialog đang mở
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        val d = openDialog ?: return@registerForActivityResult
+        if (uri == null) return@registerForActivityResult
+        d.btnPickImage.isEnabled = false
+        api({ upload(ImageUpload.toPart(this@ManageCategoriesActivity, uri)) }, onError = { d.btnPickImage.isEnabled = true; toast(it) }) {
+            d.btnPickImage.isEnabled = true
+            d.edtImage.setText(it.url)
+            toast("Đã tải ảnh lên")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +52,8 @@ class ManageCategoriesActivity : AppCompatActivity() {
     private fun showDialog(c: CategoryDto?) {
         val d = DialogCategoryBinding.inflate(layoutInflater)
         c?.let { d.edtName.setText(it.name); d.edtImage.setText(it.imageUrl ?: "") }
+        openDialog = d
+        d.btnPickImage.setOnClickListener { pickImage.launch("image/*") }
         val dialog = AlertDialog.Builder(this)
             .setTitle(if (c == null) "Thêm danh mục" else "Sửa danh mục")
             .setView(d.root).setPositiveButton("Lưu", null).setNegativeButton("Hủy", null).create()

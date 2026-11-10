@@ -33,7 +33,8 @@ public record CreateOrderRequest(string ReceiverName, string Phone, string Addre
 public record OrderItemDto(int ProductId, string ProductName, string Size, int Quantity, decimal UnitPrice, decimal LineTotal, bool Reviewed);
 public record OrderDto(int Id, string Code, bool IsGuest, string ReceiverName, string Phone, string Address, string? Note,
     string PaymentMethod, bool IsPaid, string Status, decimal Subtotal, decimal ShippingFee, decimal Total,
-    DateTime CreatedAt, int ItemCount, List<OrderItemDto> Items);
+    DateTime CreatedAt, int ItemCount, List<OrderItemDto> Items, string? PaymentUrl = null);
+public record PaymentLinkDto(string PaymentUrl);
 public record UpdateStatusRequest(string Status);
 public record CreateReviewRequest(int OrderId, int ProductId, int Stars, string? Comment);
 

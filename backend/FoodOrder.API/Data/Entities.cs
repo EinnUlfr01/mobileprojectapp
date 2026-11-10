@@ -13,10 +13,21 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
+// Vai trò: 1 vai trò khách hàng + 3 vai trò quản trị
 public static class Roles
 {
-    public const string User = "User";
-    public const string Admin = "Admin";
+    public const string User = "User";                 // Khách hàng thành viên
+    public const string Admin = "Admin";               // Quản trị viên: toàn quyền
+    public const string MenuManager = "MenuManager";   // Quản lý thực đơn: danh mục, món ăn
+    public const string OrderStaff = "OrderStaff";     // Nhân viên đơn hàng: xử lý đơn, thống kê
+
+    // Dùng trong [Authorize(Roles = ...)]
+    public const string AllStaff = Admin + "," + MenuManager + "," + OrderStaff;
+    public const string MenuManagers = Admin + "," + MenuManager;
+    public const string OrderManagers = Admin + "," + OrderStaff;
+
+    public static readonly string[] All = { User, Admin, MenuManager, OrderStaff };
+    public static bool IsStaff(string role) => role is Admin or MenuManager or OrderStaff;
 }
 
 // Bảng DanhMuc

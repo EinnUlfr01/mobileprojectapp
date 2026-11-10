@@ -21,7 +21,14 @@ object Session {
         set(value) { prefs.edit().putString("user", value?.let { gson.toJson(it) }).apply() }
 
     val isLoggedIn: Boolean get() = !token.isNullOrEmpty() && user != null
-    val isAdmin: Boolean get() = isLoggedIn && user?.role == "Admin"
+    val role: String? get() = if (isLoggedIn) user?.role else null
+
+    // Có vào trang quản trị không (Quản trị viên, Quản lý thực đơn, Nhân viên đơn hàng)
+    val isStaff: Boolean get() = role in listOf(Role.ADMIN, Role.MENU_MANAGER, Role.ORDER_STAFF)
+    val isAdmin: Boolean get() = role == Role.ADMIN
+    val canManageUsers: Boolean get() = role == Role.ADMIN
+    val canManageMenu: Boolean get() = role == Role.ADMIN || role == Role.MENU_MANAGER
+    val canManageOrders: Boolean get() = role == Role.ADMIN || role == Role.ORDER_STAFF
 
     // Khách vãng lai đã bấm "Tiếp tục với tư cách khách"
     var isGuest: Boolean

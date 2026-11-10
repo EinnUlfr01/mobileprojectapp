@@ -11,6 +11,7 @@ import android.widget.SearchView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.huflit.doanappgiaodoan.data.AdminUserRequest
+import com.huflit.doanappgiaodoan.data.Role
 import com.huflit.doanappgiaodoan.data.UserDto
 import com.huflit.doanappgiaodoan.databinding.ActivityManageUsersBinding
 import com.huflit.doanappgiaodoan.databinding.DialogUserBinding
@@ -20,11 +21,11 @@ import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import com.huflit.doanappgiaodoan.util.toast
 
-// Quản lý user (ListView): thêm, sửa, xóa, chuyển vai trò User <-> Admin bằng Dialog
+// Quản lý user (ListView): thêm, sửa, xóa, chuyển vai trò (Thành viên / Quản trị viên / Quản lý thực đơn / Nhân viên đơn hàng) bằng Dialog
 class ManageUsersActivity : AppCompatActivity() {
     private lateinit var b: ActivityManageUsersBinding
-    private val roles = listOf("User", "Admin")
-    private val filters = listOf("Tất cả vai trò", "User", "Admin")
+    private val roles = Role.ALL
+    private val filters = listOf("Tất cả vai trò") + Role.ALL.map { Role.label(it) }
     private val adapter = UserAdapter(onEdit = { showDialog(it) }, onDelete = { confirmDelete(it) })
     private var query = ""
 
@@ -49,13 +50,13 @@ class ManageUsersActivity : AppCompatActivity() {
 
     private fun load() {
         val pos = b.spRole.selectedItemPosition
-        val role = if (pos <= 0) null else filters[pos]
+        val role = if (pos <= 0) null else roles[pos - 1]
         api({ users(query.trim().ifEmpty { null }, role) }) { adapter.submit(it) }
     }
 
     private fun showDialog(user: UserDto?) {
         val d = DialogUserBinding.inflate(layoutInflater)
-        d.spRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles)
+        d.spRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles.map { Role.label(it) })
         if (user != null) {
             d.edtName.setText(user.fullName)
             d.edtEmail.setText(user.email)
@@ -109,7 +110,7 @@ class UserAdapter(
         ImageLoader.load(b.img, b.imgText, null, u.fullName)
         b.tvTitle.text = u.fullName
         b.tvSub.text = "${u.email} · ${u.phone}"
-        b.tvBadge.text = u.role
+        b.tvBadge.text = Role.label(u.role)
         b.tvBadge.visibility = View.VISIBLE
         b.btnEdit.setOnClickListener { onEdit(u) }
         b.btnDelete.setOnClickListener { onDelete(u) }

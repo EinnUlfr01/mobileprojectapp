@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.huflit.doanappgiaodoan.data.ChangePasswordRequest
+import com.huflit.doanappgiaodoan.data.Role
 import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.data.UpdateProfileRequest
 import com.huflit.doanappgiaodoan.data.UserDto
@@ -44,7 +45,7 @@ class ProfileActivity : AppCompatActivity() {
     private fun show(u: UserDto) {
         b.tvAvatar.text = u.fullName.trim().take(1).uppercase()
         b.tvFullName.text = u.fullName
-        b.tvEmail.text = "${u.email} · ${if (u.role == "Admin") "Quản trị viên" else "Thành viên"}"
+        b.tvEmail.text = "${u.email} · ${Role.label(u.role)}"
         b.edtName.setText(u.fullName)
         b.edtPhone.setText(u.phone)
         b.edtAddress.setText(u.defaultAddress ?: "")

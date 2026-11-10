@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.RadioButton
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.huflit.doanappgiaodoan.MainActivity
 import com.huflit.doanappgiaodoan.R
@@ -27,6 +26,12 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var b: ActivityCheckoutBinding
     private var lines: List<CartLine> = emptyList()
     private val shippingFee = 15000.0
+    private var pendingOrder: OrderDto? = null
+
+    // Mở màn thanh toán VNPay, nhận kết quả thành công / thất bại
+    private val payLauncher = registerForActivityResult(PaymentActivity.Contract()) { paid ->
+        pendingOrder?.let { onDone(it, paid) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +42,7 @@ class CheckoutActivity : AppCompatActivity() {
         PAYMENT_METHODS.forEachIndexed { i, m ->
             b.rgPayment.addView(RadioButton(this).apply {
                 id = View.generateViewId()
-                text = if (i == 0) "$m khi nhận hàng" else "Ví $m"
+                text = if (i == 0) "$m khi nhận hàng" else "$m (thẻ ATM, Visa, QR ngân hàng)"
                 tag = m
                 isChecked = i == 0
                 minHeight = 48
@@ -98,22 +103,26 @@ class CheckoutActivity : AppCompatActivity() {
             items = if (Session.isLoggedIn) null else lines.map { OrderLineRequest(it.productId, it.size, it.quantity) }
         )
 
-        if (payment == "Tiền mặt") send(req)
-        else AlertDialog.Builder(this)
-            .setTitle("Thanh toán qua $payment")
-            .setMessage("Đây là cổng thanh toán giả lập cho đồ án. Bấm Thanh toán để xác nhận đã trả ${b.tvTotal.text.removePrefix("Tổng thanh toán: ")}.")
-            .setPositiveButton("Thanh toán") { _, _ -> send(req) }
-            .setNegativeButton("Hủy", null)
-            .show()
+        send(req)
     }
 
     private fun send(req: CreateOrderRequest) {
         b.btnConfirm.isEnabled = false
-        api({ createOrder(req) }, onError = { b.btnConfirm.isEnabled = true; toast(it) }) { order -> onDone(order) }
+        api({ createOrder(req) }, onError = { b.btnConfirm.isEnabled = true; toast(it) }) { order ->
+            val url = order.paymentUrl
+            if (url != null) {
+                // Đơn đã tạo, giỏ đã xóa trên server -> xóa luôn giỏ của khách rồi mở VNPay
+                if (!Session.isLoggedIn) GuestCart.clear()
+                pendingOrder = order
+                payLauncher.launch(url)
+            } else onDone(order, false)
+        }
     }
 
-    private fun onDone(order: OrderDto) {
-        toast("Đặt hàng thành công")
+    private fun onDone(order: OrderDto, paid: Boolean) {
+        if (order.paymentUrl == null) toast("Đặt hàng thành công")
+        else if (paid) toast("Thanh toán VNPay thành công")
+        else toast("Chưa thanh toán. Đơn vẫn được giữ, bạn có thể thanh toán lại hoặc trả tiền mặt khi nhận hàng")
         if (Session.isLoggedIn) {
             // Về trang chủ rồi mở lịch sử đơn
             startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
@@ -124,7 +133,7 @@ class CheckoutActivity : AppCompatActivity() {
                 .putExtra("code", order.code)
                 .putExtra("name", order.receiverName)
                 .putExtra("phone", order.phone)
-                .putExtra("payment", order.paymentMethod)
+                .putExtra("payment", order.paymentMethod + if (order.paymentUrl == null) "" else if (paid) " (đã thanh toán)" else " (chưa thanh toán)")
                 .putExtra("total", order.total)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }

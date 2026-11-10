@@ -10,7 +10,8 @@ namespace FoodOrder.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize(Roles = Roles.Admin)]
+// Mọi vai trò quản trị vào được; từng chức năng giới hạn thêm bên dưới
+[Authorize(Roles = Roles.AllStaff)]
 public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : ControllerBase
 {
     // Giờ Việt Nam để tính "hôm nay", "tháng này"
@@ -32,6 +33,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
 
     // ---------- ManageUserActivity ----------
     [HttpGet("users")]
+    [Authorize(Roles = Roles.Admin)] // chỉ Quản trị viên quản lý tài khoản
     public async Task<List<UserDto>> Users(string? q, string? role)
     {
         var query = db.Users.AsQueryable();
@@ -42,6 +44,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     }
 
     [HttpPost("users")]
+    [Authorize(Roles = Roles.Admin)] // chỉ Quản trị viên quản lý tài khoản
     public async Task<ActionResult<UserDto>> CreateUser(AdminUserRequest r)
     {
         var err = await ValidateUser(r, null);
@@ -55,6 +58,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     }
 
     [HttpPut("users/{id:int}")]
+    [Authorize(Roles = Roles.Admin)] // chỉ Quản trị viên quản lý tài khoản
     public async Task<ActionResult<UserDto>> UpdateUser(int id, AdminUserRequest r)
     {
         var u = await db.Users.FindAsync(id);
@@ -77,6 +81,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     }
 
     [HttpDelete("users/{id:int}")]
+    [Authorize(Roles = Roles.Admin)] // chỉ Quản trị viên quản lý tài khoản
     public async Task<ActionResult<MessageDto>> DeleteUser(int id)
     {
         if (id == User.UserId()) return BadRequest(new MessageDto("Không thể xóa chính mình"));
@@ -92,7 +97,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         if (string.IsNullOrWhiteSpace(r.FullName)) return "Vui lòng nhập họ tên";
         if (!MailAddress.TryCreate(r.Email?.Trim(), out _)) return "Email không đúng định dạng";
         if (!Mapping.IsValidPhone(r.Phone)) return "Số điện thoại phải đủ 10 số";
-        if (r.Role != Roles.User && r.Role != Roles.Admin) return "Vai trò không hợp lệ";
+        if (!Roles.All.Contains(r.Role)) return "Vai trò không hợp lệ";
         var email = r.Email!.Trim().ToLower();
         if (await db.Users.AnyAsync(u => u.Email == email && u.Id != id)) return "Email đã tồn tại";
         if (await db.Users.AnyAsync(u => u.Phone == r.Phone && u.Id != id)) return "Số điện thoại đã tồn tại";
@@ -102,6 +107,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     // ---------- ManageOrderActivity: tab Danh sách đơn ----------
     // type: member | guest
     [HttpGet("orders")]
+    [Authorize(Roles = Roles.OrderManagers)]
     public async Task<List<OrderDto>> Orders(string? status, string? type)
     {
         var q = db.Orders.Include(o => o.Items).AsQueryable();
@@ -113,6 +119,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     }
 
     [HttpPut("orders/{id:int}/status")]
+    [Authorize(Roles = Roles.OrderManagers)]
     public async Task<ActionResult<MessageDto>> UpdateStatus(int id, UpdateStatusRequest r)
     {
         if (!OrderStatus.All.Contains(r.Status)) return BadRequest(new MessageDto("Trạng thái không hợp lệ"));
@@ -140,6 +147,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     // ---------- ManageOrderActivity: tab Thống kê ----------
     // groupBy: day | month | user | category ; from/to dạng yyyy-MM-dd (giờ VN). Chỉ tính đơn Hoàn thành.
     [HttpGet("stats")]
+    [Authorize(Roles = Roles.OrderManagers)]
     public async Task<StatsDto> Stats(string groupBy = "day", DateTime? from = null, DateTime? to = null)
     {
         var fromVn = (from ?? VnNow.Date.AddDays(-29)).Date;

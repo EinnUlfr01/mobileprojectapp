@@ -9,6 +9,9 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cấu hình riêng trên máy (khóa VNPay sandbox...): không đưa lên GitHub
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
 builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
@@ -33,6 +36,9 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<TokenService>();
+builder.Services.Configure<VnPayOptions>(builder.Configuration.GetSection("VnPay"));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<FoodOrder.API.Controllers.VnPayService>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

@@ -17,7 +17,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
             .Select(c => new CategoryDto(c.Id, c.Name, c.ImageUrl, c.Products.Count))
             .ToListAsync();
 
-    [HttpPost, Authorize(Roles = Roles.Admin)]
+    [HttpPost, Authorize(Roles = Roles.MenuManagers)]
     public async Task<ActionResult<CategoryDto>> Create(CategoryRequest r)
     {
         if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên danh mục"));
@@ -27,7 +27,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         return new CategoryDto(c.Id, c.Name, c.ImageUrl, 0);
     }
 
-    [HttpPut("{id:int}"), Authorize(Roles = Roles.Admin)]
+    [HttpPut("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
     public async Task<ActionResult<MessageDto>> Update(int id, CategoryRequest r)
     {
         var c = await db.Categories.FindAsync(id);
@@ -39,7 +39,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         return new MessageDto("Đã cập nhật");
     }
 
-    [HttpDelete("{id:int}"), Authorize(Roles = Roles.Admin)]
+    [HttpDelete("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
     public async Task<ActionResult<MessageDto>> Delete(int id)
     {
         var c = await db.Categories.FindAsync(id);
@@ -91,7 +91,7 @@ public class ProductsController(AppDbContext db) : ControllerBase
     }
 
     // AddEditProductActivity
-    [HttpPost, Authorize(Roles = Roles.Admin)]
+    [HttpPost, Authorize(Roles = Roles.MenuManagers)]
     public async Task<ActionResult<ProductDto>> Create(ProductRequest r)
     {
         var err = await Validate(r);
@@ -107,7 +107,7 @@ public class ProductsController(AppDbContext db) : ControllerBase
         return p.ToDto();
     }
 
-    [HttpPut("{id:int}"), Authorize(Roles = Roles.Admin)]
+    [HttpPut("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
     public async Task<ActionResult<ProductDto>> Update(int id, ProductRequest r)
     {
         var p = await db.Products.Include(x => x.Sizes).Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id);
@@ -126,7 +126,7 @@ public class ProductsController(AppDbContext db) : ControllerBase
         return p.ToDto();
     }
 
-    [HttpDelete("{id:int}"), Authorize(Roles = Roles.Admin)]
+    [HttpDelete("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
     public async Task<ActionResult<MessageDto>> Delete(int id)
     {
         var p = await db.Products.FindAsync(id);

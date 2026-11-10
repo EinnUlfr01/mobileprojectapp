@@ -1,0 +1,6 @@
+{
+  "VnPay": {
+    "TmnCode": "MA_TMNCODE_SANDBOX",
+    "HashSecret": "CHUOI_HASHSECRET_SANDBOX"
+  }
+}

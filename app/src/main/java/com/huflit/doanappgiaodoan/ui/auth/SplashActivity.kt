@@ -18,7 +18,7 @@ class SplashActivity : AppCompatActivity() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             val next = when {
-                Session.isAdmin -> AdminDashboardActivity::class.java
+                Session.isStaff -> AdminDashboardActivity::class.java
                 Session.isLoggedIn || Session.isGuest -> MainActivity::class.java
                 else -> LoginActivity::class.java
             }

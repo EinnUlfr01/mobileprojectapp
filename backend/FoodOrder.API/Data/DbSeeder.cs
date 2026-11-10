@@ -15,6 +15,7 @@ public static class DbSeeder
         await db.Database.EnsureCreatedAsync();
         if (await db.Users.AnyAsync())
         {
+            await EnsureStaffAsync(db, hasher);
             await FillImagesAsync(sp, db);
             return;
         }
@@ -24,6 +25,8 @@ public static class DbSeeder
         var user = new User { FullName = "Nguyễn Văn A", Email = "user@gmail.com", Phone = "0911111111", Role = Roles.User, DefaultAddress = "12 Nguyễn Trãi, Q.5, TP.HCM" };
         user.PasswordHash = hasher.HashPassword(user, "123456");
         db.Users.AddRange(admin, user);
+        await db.SaveChangesAsync();
+        await EnsureStaffAsync(db, hasher);
 
         var data = new (string Cat, (string Name, string Desc, bool IsNew, decimal Price)[] Items)[]
         {
@@ -83,7 +86,7 @@ public static class DbSeeder
                 ReceiverName = guest ? "Khách vãng lai " + i : user.FullName,
                 Phone = guest ? "09" + rnd.Next(10000000, 99999999) : user.Phone,
                 Address = guest ? "Q.3, TP.HCM" : user.DefaultAddress!,
-                PaymentMethod = i % 3 == 0 ? "MoMo" : "Tiền mặt",
+                PaymentMethod = i % 3 == 0 ? "VNPay" : "Tiền mặt",
                 Status = i <= 8 ? OrderStatus.Done : (i <= 10 ? OrderStatus.Shipping : OrderStatus.Pending),
                 CreatedAt = DateTime.UtcNow.AddDays(-rnd.Next(0, 60)),
                 ShippingFee = 15000
@@ -112,6 +115,24 @@ public static class DbSeeder
         }
         await db.SaveChangesAsync();
         await FillImagesAsync(sp, db);
+    }
+
+    // Tài khoản mẫu cho 2 vai trò quản trị phụ (thêm vào cả database đã có sẵn)
+    private static async Task EnsureStaffAsync(AppDbContext db, IPasswordHasher<User> hasher)
+    {
+        var samples = new[]
+        {
+            (Name: "Quản lý thực đơn", Email: "menu@gmail.com", Phone: "0900000001", Role: Roles.MenuManager, Pass: "Menu@123"),
+            (Name: "Nhân viên đơn hàng", Email: "donhang@gmail.com", Phone: "0900000002", Role: Roles.OrderStaff, Pass: "Donhang@123")
+        };
+        foreach (var s in samples)
+        {
+            if (await db.Users.AnyAsync(u => u.Email == s.Email || u.Phone == s.Phone)) continue;
+            var u = new User { FullName = s.Name, Email = s.Email, Phone = s.Phone, Role = s.Role };
+            u.PasswordHash = hasher.HashPassword(u, s.Pass);
+            db.Users.Add(u);
+        }
+        await db.SaveChangesAsync();
     }
 
     // Gắn ảnh trong wwwroot/images cho món/danh mục chưa có ảnh.

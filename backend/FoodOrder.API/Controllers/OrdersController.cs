@@ -8,10 +8,10 @@ namespace FoodOrder.API.Controllers;
 
 [ApiController]
 [Route("api/orders")]
-public class OrdersController(AppDbContext db) : ControllerBase
+public class OrdersController(AppDbContext db, VnPayService vnPay) : ControllerBase
 {
     public const decimal ShippingFee = 15000;
-    private static readonly string[] PaymentMethods = { "Tiền mặt", "MoMo", "ZaloPay", "VNPay" };
+    private static readonly string[] PaymentMethods = { "Tiền mặt", PaymentsController.VnPayMethod };
 
     // CheckoutActivity + GuestCheckoutActivity
     // - User đã đăng nhập: không gửi Items -> lấy từ giỏ hàng trên server rồi xóa giỏ
@@ -44,8 +44,8 @@ public class OrdersController(AppDbContext db) : ControllerBase
             Address = r.Address.Trim(),
             Note = r.Note,
             PaymentMethod = r.PaymentMethod,
-            // Thanh toán ví điện tử: giả lập thanh toán thành công
-            IsPaid = r.PaymentMethod != "Tiền mặt",
+            // VNPay: chưa thanh toán cho tới khi VNPay báo thành công
+            IsPaid = false,
             ShippingFee = ShippingFee
         };
         foreach (var l in lines)
@@ -67,7 +67,9 @@ public class OrdersController(AppDbContext db) : ControllerBase
         db.Orders.Add(order);
         db.CartItems.RemoveRange(cartItems);
         await db.SaveChangesAsync();
-        return order.ToDto();
+        // Chọn VNPay: trả về link thanh toán để app mở trong WebView
+        var paymentUrl = order.PaymentMethod == PaymentsController.VnPayMethod ? vnPay.CreatePaymentUrl(order) : null;
+        return order.ToDto() with { PaymentUrl = paymentUrl };
     }
 
     // OrderHistoryActivity
@@ -90,10 +92,26 @@ public class OrdersController(AppDbContext db) : ControllerBase
         var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id);
         if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
         var uid = User.UserId();
-        if (o.UserId != uid && !User.IsInRole(Roles.Admin)) return Forbid();
+        var isOrderManager = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.OrderStaff);
+        if (o.UserId != uid && !isOrderManager) return Forbid();
         var reviewed = uid == null ? new HashSet<int>() :
             (await db.Reviews.Where(r => r.OrderId == id && r.UserId == uid).Select(r => r.ProductId).ToListAsync()).ToHashSet();
         return o.ToDto(reviewed);
+    }
+
+    // Thanh toán lại đơn VNPay chưa trả tiền (OrderDetailActivity)
+    [HttpPost("{id:int}/pay")]
+    [Authorize]
+    public async Task<ActionResult<PaymentLinkDto>> Pay(int id)
+    {
+        var uid = User.UserId();
+        var o = await db.Orders.FirstOrDefaultAsync(x => x.Id == id && x.UserId == uid);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        if (o.IsPaid) return BadRequest(new MessageDto("Đơn đã được thanh toán"));
+        if (o.Status == OrderStatus.Cancelled) return BadRequest(new MessageDto("Đơn đã hủy"));
+        o.PaymentMethod = PaymentsController.VnPayMethod;
+        await db.SaveChangesAsync();
+        return new PaymentLinkDto(vnPay.CreatePaymentUrl(o));
     }
 
     // Người dùng tự hủy khi đơn còn "Đang xử lý"

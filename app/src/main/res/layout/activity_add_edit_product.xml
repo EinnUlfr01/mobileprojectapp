@@ -13,6 +13,9 @@
                 <ImageView android:id="@+id/img" android:layout_width="match_parent" android:layout_height="match_parent"
                     android:contentDescription="Ảnh món" android:scaleType="centerCrop" android:visibility="gone" />
             </FrameLayout>
+            <Button android:id="@+id/btnPickImage" style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp"
+                android:text="Chọn ảnh từ điện thoại" />
     <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilImage"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="8dp"
         android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Link ảnh món (dán URL ảnh)">

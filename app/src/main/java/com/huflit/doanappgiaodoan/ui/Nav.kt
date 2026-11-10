@@ -22,7 +22,7 @@ object Nav {
 
     // Về trang chủ đúng vai trò, xóa các màn cũ
     fun home(ctx: Context) {
-        val target = if (Session.isAdmin) AdminDashboardActivity::class.java else MainActivity::class.java
+        val target = if (Session.isStaff) AdminDashboardActivity::class.java else MainActivity::class.java
         ctx.startActivity(Intent(ctx, target).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
     }
 }

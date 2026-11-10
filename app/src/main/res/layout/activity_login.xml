@@ -47,6 +47,6 @@
 
         <TextView style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" android:gravity="center"
-            android:text="Tài khoản mẫu: user@gmail.com / 123456 · admin@gmail.com / Admin@123" />
+            android:text="Tài khoản mẫu:\nuser@gmail.com / 123456 · admin@gmail.com / Admin@123\nmenu@gmail.com / Menu@123 · donhang@gmail.com / Donhang@123" />
     </LinearLayout>
 </ScrollView>

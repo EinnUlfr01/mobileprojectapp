@@ -2,6 +2,7 @@ package com.huflit.doanappgiaodoan.ui.admin
 
 import android.os.Bundle
 import android.widget.ArrayAdapter
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import com.huflit.doanappgiaodoan.data.CategoryDto
@@ -10,6 +11,7 @@ import com.huflit.doanappgiaodoan.data.SizeDto
 import com.huflit.doanappgiaodoan.databinding.ActivityAddEditProductBinding
 import com.huflit.doanappgiaodoan.ui.Nav
 import com.huflit.doanappgiaodoan.util.ImageLoader
+import com.huflit.doanappgiaodoan.util.ImageUpload
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import com.huflit.doanappgiaodoan.util.toast
@@ -21,6 +23,19 @@ class AddEditProductActivity : AppCompatActivity() {
     private var catList: List<CategoryDto> = emptyList()
     private var pendingCategoryId: Int? = null
 
+    // Chọn ảnh trong thư viện điện thoại -> upload lên API -> điền đường dẫn vào ô "Link ảnh"
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        b.btnPickImage.isEnabled = false
+        b.btnPickImage.text = "Đang tải ảnh lên…"
+        val reset = { b.btnPickImage.isEnabled = true; b.btnPickImage.text = "Chọn ảnh từ điện thoại" }
+        api({ upload(ImageUpload.toPart(this@AddEditProductActivity, uri)) }, onError = { reset(); toast(it) }) {
+            reset()
+            b.edtImage.setText(it.url)
+            toast("Đã tải ảnh lên")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         b = ActivityAddEditProductBinding.inflate(layoutInflater)
@@ -31,6 +46,7 @@ class AddEditProductActivity : AppCompatActivity() {
         b.edtImage.doAfterTextChanged { previewImage() }
         b.edtName.doAfterTextChanged { previewImage() }
         b.btnSave.setOnClickListener { saveProduct() }
+        b.btnPickImage.setOnClickListener { pickImage.launch("image/*") }
         previewImage()
 
         api({ categories() }) { list ->

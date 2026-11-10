@@ -15,8 +15,29 @@ Gồm 2 phần:
 4. Mở http://localhost:5090/scalar để xem và thử API.
 
 Tài khoản mẫu:
-- User: `user@gmail.com` / `123456`
-- Admin: `admin@gmail.com` / `Admin@123`
+
+| Vai trò | Tài khoản | Được làm gì |
+|---|---|---|
+| Thành viên | `user@gmail.com` / `123456` | Đặt món, lịch sử đơn, đánh giá |
+| Quản trị viên | `admin@gmail.com` / `Admin@123` | Toàn quyền, quản lý người dùng và phân quyền |
+| Quản lý thực đơn | `menu@gmail.com` / `Menu@123` | Danh mục, món ăn, upload ảnh |
+| Nhân viên đơn hàng | `donhang@gmail.com` / `Donhang@123` | Xử lý đơn, thống kê |
+
+API chặn theo vai trò (`[Authorize(Roles = ...)]`), app chỉ hiện các nút của vai trò đang đăng nhập.
+
+### Thanh toán VNPay
+
+- Chưa cấu hình: API dùng trang thanh toán giả lập (bấm "Thanh toán" hoặc "Hủy giao dịch").
+- Dùng VNPay sandbox thật: đăng ký tại https://sandbox.vnpayment.vn/devreg/ để nhận `TmnCode` và `HashSecret`,
+  copy `appsettings.Local.json.example` thành `appsettings.Local.json`, điền 2 giá trị vào rồi chạy lại API.
+  Thẻ test: ngân hàng NCB, số thẻ `9704198526191432198`, tên `NGUYEN VAN A`, ngày phát hành `07/15`, OTP `123456`.
+- App mở trang thanh toán trong WebView, VNPay chuyển về `/api/payments/vnpay-return`, API kiểm tra chữ ký rồi đánh dấu đơn đã thanh toán.
+- Đơn VNPay chưa trả tiền có nút "Thanh toán qua VNPay" trong chi tiết đơn.
+
+### Ảnh món
+
+- Admin / Quản lý thực đơn bấm "Chọn ảnh từ điện thoại" khi thêm/sửa món hoặc danh mục, ảnh lưu ở `wwwroot/uploads`.
+- Hoặc chép ảnh vào `wwwroot/images` theo tên trong `DANH_SACH_TEN_ANH.txt` rồi chạy lại API.
 
 Muốn tạo lại dữ liệu từ đầu: xóa database `DoAnAppGiaoDoAn` trong SSMS rồi chạy lại.
 

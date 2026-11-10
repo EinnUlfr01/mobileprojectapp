@@ -16,3 +16,7 @@ backend/**/bin/
 backend/**/obj/
 backend/**/.vs/
 *.user
+
+# Ảnh upload khi chạy thử và cấu hình riêng (khóa VNPay)
+backend/**/wwwroot/uploads/
+backend/**/appsettings.Local.json

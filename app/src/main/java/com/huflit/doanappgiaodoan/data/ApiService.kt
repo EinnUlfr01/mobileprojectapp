@@ -1,10 +1,13 @@
 package com.huflit.doanappgiaodoan.data
 
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Multipart
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -38,6 +41,7 @@ interface ApiService {
     @GET("api/orders/my") suspend fun myOrders(@Query("status") status: String? = null): List<OrderDto>
     @GET("api/orders/{id}") suspend fun order(@Path("id") id: Int): OrderDto
     @PUT("api/orders/{id}/cancel") suspend fun cancelOrder(@Path("id") id: Int): MessageDto
+    @POST("api/orders/{id}/pay") suspend fun payOrder(@Path("id") id: Int): PaymentLinkDto
     @POST("api/reviews") suspend fun review(@Body body: CreateReviewRequest): MessageDto
 
     // ---------- Admin ----------
@@ -54,6 +58,9 @@ interface ApiService {
     @POST("api/products") suspend fun createProduct(@Body body: ProductRequest): ProductDto
     @PUT("api/products/{id}") suspend fun updateProduct(@Path("id") id: Int, @Body body: ProductRequest): ProductDto
     @DELETE("api/products/{id}") suspend fun deleteProduct(@Path("id") id: Int): MessageDto
+
+    // Upload ảnh từ điện thoại, trả về "uploads/xxx.jpg"
+    @Multipart @POST("api/uploads") suspend fun upload(@Part file: MultipartBody.Part): UploadDto
 
     @GET("api/admin/orders") suspend fun adminOrders(@Query("status") status: String? = null, @Query("type") type: String? = null): List<OrderDto>
     @PUT("api/admin/orders/{id}/status") suspend fun updateOrderStatus(@Path("id") id: Int, @Body body: UpdateStatusRequest): MessageDto

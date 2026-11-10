@@ -32,6 +32,12 @@ class OrderDetailActivity : AppCompatActivity() {
     private var current: OrderDto? = null
     private val adapter = OrderLineAdapter { item -> openReview(item) }
 
+    // Thanh toán lại bằng VNPay
+    private val payLauncher = registerForActivityResult(PaymentActivity.Contract()) { paid ->
+        toast(if (paid) "Thanh toán thành công" else "Thanh toán chưa thành công")
+        load()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         b = ActivityOrderDetailBinding.inflate(layoutInflater)
@@ -45,6 +51,9 @@ class OrderDetailActivity : AppCompatActivity() {
         b.listView.addFooterView(footer.root, null, false)
         b.listView.adapter = adapter
 
+        b.btnPay.setOnClickListener {
+            api({ payOrder(orderId) }) { link -> payLauncher.launch(link.paymentUrl) }
+        }
         b.btnCancel.setOnClickListener {
             AlertDialog.Builder(this).setTitle("Hủy đơn?").setMessage("Bạn chắc chắn muốn hủy đơn này?")
                 .setPositiveButton("Hủy đơn") { _, _ -> api({ cancelOrder(orderId) }) { toast(it.message ?: "Đã hủy"); load() } }
@@ -71,9 +80,12 @@ class OrderDetailActivity : AppCompatActivity() {
                 "Phí giao hàng: ${o.shippingFee.toMoney()}\n" +
                 "Tổng thanh toán: ${o.total.toMoney()}"
             // Chỉ chủ đơn đánh giá được, và chỉ khi đơn hoàn thành
-            val canReview = o.status == OrderStatus.DONE && !Session.isAdmin
+            val canReview = o.status == OrderStatus.DONE && !Session.isStaff
             adapter.submit(o.items, canReview)
-            b.btnCancel.visibility = if (o.status == OrderStatus.PENDING && !Session.isAdmin) View.VISIBLE else View.GONE
+            b.btnCancel.visibility = if (o.status == OrderStatus.PENDING && !Session.isStaff) View.VISIBLE else View.GONE
+            // Đơn chưa trả tiền: cho thanh toán online bằng VNPay
+            val canPay = !Session.isStaff && !o.isPaid && o.status != OrderStatus.CANCELLED && o.status != OrderStatus.DONE
+            b.btnPay.visibility = if (canPay) View.VISIBLE else View.GONE
         }
     }
 

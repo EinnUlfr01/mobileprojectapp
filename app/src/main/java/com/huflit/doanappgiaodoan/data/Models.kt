@@ -51,8 +51,11 @@ data class OrderDto(
     val id: Int, val code: String, val isGuest: Boolean, val receiverName: String, val phone: String,
     val address: String, val note: String?, val paymentMethod: String, val isPaid: Boolean,
     val status: String, val subtotal: Double, val shippingFee: Double, val total: Double,
-    val createdAt: String, val itemCount: Int, val items: List<OrderItemDto>
+    val createdAt: String, val itemCount: Int, val items: List<OrderItemDto>,
+    val paymentUrl: String? = null
 )
+data class PaymentLinkDto(val paymentUrl: String)
+data class UploadDto(val url: String)
 data class UpdateStatusRequest(val status: String)
 data class CreateReviewRequest(val orderId: Int, val productId: Int, val stars: Int, val comment: String?)
 
@@ -81,4 +84,20 @@ object OrderStatus {
     val ALL = listOf(PENDING, SHIPPING, DONE, CANCELLED)
 }
 
-val PAYMENT_METHODS = listOf("Tiền mặt", "MoMo", "ZaloPay", "VNPay")
+val PAYMENT_METHODS = listOf("Tiền mặt", "VNPay")
+
+// Vai trò (khớp với Roles bên API)
+object Role {
+    const val USER = "User"
+    const val ADMIN = "Admin"
+    const val MENU_MANAGER = "MenuManager"
+    const val ORDER_STAFF = "OrderStaff"
+    val ALL = listOf(USER, ADMIN, MENU_MANAGER, ORDER_STAFF)
+
+    fun label(role: String?): String = when (role) {
+        ADMIN -> "Quản trị viên"
+        MENU_MANAGER -> "Quản lý thực đơn"
+        ORDER_STAFF -> "Nhân viên đơn hàng"
+        else -> "Thành viên"
+    }
+}
