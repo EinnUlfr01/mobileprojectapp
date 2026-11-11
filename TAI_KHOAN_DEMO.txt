@@ -1,0 +1,44 @@
+TÀI KHOẢN DEMO - ĐỀ TÀI 10: ỨNG DỤNG ĐẶT THỨC ĂN
+=================================================
+
+1. TÀI KHOẢN ĐĂNG NHẬP
+-------------------------------------------------
+Vai trò              Email                 Mật khẩu
+Quản trị viên        admin@gmail.com       Admin@123
+Quản lý thực đơn     menu@gmail.com        Menu@123
+Nhân viên đơn hàng   donhang@gmail.com     Donhang@123
+Khách hàng           user@gmail.com        123456
+Khách vãng lai       (bấm "Tiếp tục với tư cách khách", không cần tài khoản)
+
+Phân quyền:
+- Quản trị viên: làm được mọi thứ (người dùng, danh mục, món, mã giảm giá, đơn hàng, tin nhắn)
+- Quản lý thực đơn: chỉ quản lý danh mục, món ăn, ảnh món
+- Nhân viên đơn hàng: chỉ quản lý đơn hàng, thống kê, tin nhắn
+
+2. MÃ GIẢM GIÁ
+-------------------------------------------------
+GIAM20     Giảm 20%, tối đa 30.000đ, đơn từ 100.000đ
+GIAM10K    Giảm 10.000đ, đơn từ 50.000đ
+FREESHIP   Miễn phí giao hàng
+
+3. CÁC BƯỚC CHẠY TRƯỚC KHI DEMO
+-------------------------------------------------
+Bước 1 - Chạy API (mở terminal riêng, để nguyên cửa sổ này suốt buổi demo):
+    cd D:\Projects\DoAnAppGiaodoan\backend\FoodOrder.API
+    dotnet run
+
+Bước 2 - Nối 2 máy vào API (gõ trong Terminal của Android Studio):
+    D:\Android\SDK\platform-tools\adb.exe -d reverse tcp:5090 tcp:5090
+    D:\Android\SDK\platform-tools\adb.exe -e reverse tcp:5090 tcp:5090
+    (-d = điện thoại cắm cáp USB, -e = máy ảo)
+
+Bước 3 - Chọn từng máy ở ô thiết bị trên thanh công cụ Android Studio rồi bấm Run.
+
+Lưu ý: app báo "Không kết nối được server" thì chạy lại 2 lệnh ở Bước 2
+(khi rút cáp cắm lại, tắt mở máy ảo hoặc mở lại Android Studio).
+
+4. KỊCH BẢN DEMO CHAT TRỰC TUYẾN
+-------------------------------------------------
+- Điện thoại đăng nhập khách hàng, bấm biểu tượng tin nhắn ở trang chủ, gửi tin.
+- Máy ảo đăng nhập admin@gmail.com, có thông báo ngay, mở ô "Tin nhắn" để trả lời.
+- Gõ phím ở một bên thì bên kia hiện "đang nhập…".
