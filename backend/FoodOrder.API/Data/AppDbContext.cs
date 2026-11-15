@@ -5,6 +5,8 @@ namespace FoodOrder.API.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<StoreCategory> StoreCategories => Set<StoreCategory>();
+    public DbSet<Store> Stores => Set<Store>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductSize> ProductSizes => Set<ProductSize>();
@@ -27,11 +29,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<User>().Property(x => x.Phone).HasMaxLength(15);
         b.Entity<User>().Property(x => x.Role).HasMaxLength(20);
 
+        b.Entity<StoreCategory>().ToTable("DanhMucQuanAn");
+
+        b.Entity<Store>().ToTable("QuanAn");
+        b.Entity<Store>().HasOne(x => x.StoreCategory).WithMany(c => c.Stores)
+            .HasForeignKey(x => x.StoreCategoryId).OnDelete(DeleteBehavior.Restrict);
+
         b.Entity<Category>().ToTable("DanhMuc");
 
         b.Entity<Product>().ToTable("SanPham");
         b.Entity<Product>().HasOne(x => x.Category).WithMany(c => c.Products)
             .HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<Product>().HasOne(x => x.Store).WithMany(s => s.Products)
+            .HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.SetNull);
 
         b.Entity<ProductSize>().ToTable("SanPhamSize");
         b.Entity<ProductSize>().Property(x => x.Price).HasPrecision(18, 0);

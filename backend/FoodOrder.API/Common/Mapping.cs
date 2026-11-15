@@ -6,11 +6,19 @@ public static class Mapping
 {
     public static UserDto ToDto(this User u) => new(u.Id, u.FullName, u.Email, u.Phone, u.DefaultAddress, u.Role);
 
+    public static StoreCategoryDto ToDto(this StoreCategory sc) =>
+        new(sc.Id, sc.Name, sc.ImageUrl, sc.Stores.Count);
+
+    public static StoreDto ToDto(this Store s) =>
+        new(s.Id, s.StoreCategoryId, s.StoreCategory?.Name ?? "", s.Name, s.Description,
+            s.ImageUrl, s.Address, s.Phone, Math.Round(s.Rating, 1), s.SoldCount, s.Products.Count);
+
     public static ProductDto ToDto(this Product p) => new(
         p.Id, p.CategoryId, p.Category?.Name ?? "", p.Name, p.Description, p.ImageUrl, p.IsNew,
         p.SoldCount, Math.Round(p.AvgRating, 1), p.RatingCount,
         p.Sizes.Count == 0 ? 0 : p.Sizes.Min(s => s.Price),
-        p.Sizes.OrderBy(s => s.Price).Select(s => new SizeDto(s.Size, s.Price)).ToList());
+        p.Sizes.OrderBy(s => s.Price).Select(s => new SizeDto(s.Size, s.Price)).ToList(),
+        p.StoreId, p.Store?.Name);
 
     public static OrderDto ToDto(this Order o, HashSet<int>? reviewedProductIds = null) => new(
         o.Id, o.Code, o.UserId == null, o.ReceiverName, o.Phone, o.Address, o.Note, o.PaymentMethod, o.IsPaid,

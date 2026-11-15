@@ -33,6 +33,7 @@
         <!-- B. Nhóm User (dùng chung cho khách vãng lai) -->
         <activity android:name=".MainActivity" />
         <activity android:name=".ui.user.SearchActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.user.StoreDetailActivity" />
         <activity android:name=".ui.user.CategoryProductsActivity" />
         <activity android:name=".ui.user.ProductDetailActivity" />
         <activity android:name=".ui.user.CartActivity" />

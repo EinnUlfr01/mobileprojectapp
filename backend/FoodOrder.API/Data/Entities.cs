@@ -30,6 +30,32 @@ public static class Roles
     public static bool IsStaff(string role) => role is Admin or MenuManager or OrderStaff;
 }
 
+// Bảng DanhMucQuanAn
+public class StoreCategory
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? ImageUrl { get; set; }
+    public List<Store> Stores { get; set; } = new();
+}
+
+// Bảng QuanAn
+public class Store
+{
+    public int Id { get; set; }
+    public int StoreCategoryId { get; set; }
+    public StoreCategory? StoreCategory { get; set; }
+    public string Name { get; set; } = "";
+    public string? Description { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? Address { get; set; }
+    public string? Phone { get; set; }
+    public double Rating { get; set; } = 5.0;
+    public int SoldCount { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public List<Product> Products { get; set; } = new();
+}
+
 // Bảng DanhMuc
 public class Category
 {
@@ -45,6 +71,8 @@ public class Product
     public int Id { get; set; }
     public int CategoryId { get; set; }
     public Category? Category { get; set; }
+    public int? StoreId { get; set; }
+    public Store? Store { get; set; }
     public string Name { get; set; } = "";
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }

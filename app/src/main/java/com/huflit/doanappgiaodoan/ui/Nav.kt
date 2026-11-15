@@ -17,6 +17,9 @@ object Nav {
     fun product(ctx: Context, id: Int) =
         ctx.startActivity(Intent(ctx, ProductDetailActivity::class.java).putExtra(EXTRA_ID, id))
 
+    fun store(ctx: Context, id: Int) =
+        ctx.startActivity(Intent(ctx, com.huflit.doanappgiaodoan.ui.user.StoreDetailActivity::class.java).putExtra(EXTRA_ID, id))
+
     fun category(ctx: Context, id: Int, name: String) =
         ctx.startActivity(Intent(ctx, CategoryProductsActivity::class.java).putExtra(EXTRA_ID, id).putExtra(EXTRA_NAME, name))
 

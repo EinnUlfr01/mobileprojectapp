@@ -14,6 +14,20 @@ data class LoginResponse(val token: String, val user: UserDto)
 data class UpdateProfileRequest(val fullName: String, val phone: String, val defaultAddress: String?)
 data class ChangePasswordRequest(val oldPassword: String, val newPassword: String)
 
+data class StoreCategoryDto(val id: Int, val name: String, val imageUrl: String?, val storeCount: Int)
+data class StoreCategoryRequest(val name: String, val imageUrl: String?)
+
+data class StoreDto(
+    val id: Int, val storeCategoryId: Int, val storeCategoryName: String, val name: String,
+    val description: String?, val imageUrl: String?, val address: String?, val phone: String?,
+    val rating: Double, val soldCount: Int, val productCount: Int
+)
+data class StoreDetailDto(val store: StoreDto, val products: List<ProductDto>)
+data class StoreRequest(
+    val storeCategoryId: Int, val name: String, val description: String?,
+    val imageUrl: String?, val address: String?, val phone: String?
+)
+
 data class CategoryDto(val id: Int, val name: String, val imageUrl: String?, val productCount: Int)
 data class CategoryRequest(val name: String, val imageUrl: String?)
 
@@ -21,13 +35,14 @@ data class SizeDto(val size: String, val price: Double)
 data class ProductDto(
     val id: Int, val categoryId: Int, val categoryName: String, val name: String,
     val description: String?, val imageUrl: String?, val isNew: Boolean, val soldCount: Int,
-    val avgRating: Double, val ratingCount: Int, val minPrice: Double, val sizes: List<SizeDto>
+    val avgRating: Double, val ratingCount: Int, val minPrice: Double, val sizes: List<SizeDto>,
+    val storeId: Int? = null, val storeName: String? = null
 )
 data class ReviewDto(val id: Int, val userName: String, val stars: Int, val comment: String?, val createdAt: String)
 data class ProductDetailDto(val product: ProductDto, val reviews: List<ReviewDto>, val isFavorite: Boolean = false)
 data class ProductRequest(
     val categoryId: Int, val name: String, val description: String?, val imageUrl: String?,
-    val isNew: Boolean, val sizes: List<SizeDto>
+    val isNew: Boolean, val sizes: List<SizeDto>, val storeId: Int? = null
 )
 
 data class CartItemDto(

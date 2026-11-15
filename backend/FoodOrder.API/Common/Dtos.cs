@@ -10,15 +10,25 @@ public record LoginResponse(string Token, UserDto User);
 public record UpdateProfileRequest(string FullName, string Phone, string? DefaultAddress);
 public record ChangePasswordRequest(string OldPassword, string NewPassword);
 
-// ---------- Danh mục, món ----------
+// ---------- Quán ăn, danh mục quán ----------
+public record StoreCategoryDto(int Id, string Name, string? ImageUrl, int StoreCount);
+public record StoreCategoryRequest(string Name, string? ImageUrl);
+public record StoreDto(int Id, int StoreCategoryId, string StoreCategoryName, string Name, string? Description,
+    string? ImageUrl, string? Address, string? Phone, double Rating, int SoldCount, int ProductCount);
+public record StoreDetailDto(StoreDto Store, List<ProductDto> Products);
+public record StoreRequest(int StoreCategoryId, string Name, string? Description, string? ImageUrl, string? Address, string? Phone);
+
+// ---------- Danh mục món, món ----------
 public record CategoryDto(int Id, string Name, string? ImageUrl, int ProductCount);
 public record CategoryRequest(string Name, string? ImageUrl);
 public record SizeDto(string Size, decimal Price);
 public record ProductDto(int Id, int CategoryId, string CategoryName, string Name, string? Description,
-    string? ImageUrl, bool IsNew, int SoldCount, double AvgRating, int RatingCount, decimal MinPrice, List<SizeDto> Sizes);
+    string? ImageUrl, bool IsNew, int SoldCount, double AvgRating, int RatingCount, decimal MinPrice, List<SizeDto> Sizes,
+    int? StoreId = null, string? StoreName = null);
 public record ReviewDto(int Id, string UserName, int Stars, string? Comment, DateTime CreatedAt);
 public record ProductDetailDto(ProductDto Product, List<ReviewDto> Reviews, bool IsFavorite = false);
-public record ProductRequest(int CategoryId, string Name, string? Description, string? ImageUrl, bool IsNew, List<SizeDto> Sizes);
+public record ProductRequest(int CategoryId, string Name, string? Description, string? ImageUrl, bool IsNew, List<SizeDto> Sizes,
+    int? StoreId = null);
 
 // ---------- Giỏ hàng ----------
 public record CartItemDto(int Id, int ProductId, string ProductName, string? ImageUrl, string Size, int Quantity, decimal UnitPrice, decimal LineTotal);
