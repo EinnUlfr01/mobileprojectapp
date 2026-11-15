@@ -19,10 +19,27 @@ interface ApiService {
     @PUT("api/me") suspend fun updateMe(@Body body: UpdateProfileRequest): UserDto
     @PUT("api/me/password") suspend fun changePassword(@Body body: ChangePasswordRequest): MessageDto
 
+    // ---------- Quán ăn & Danh mục quán ----------
+    @GET("api/store-categories") suspend fun storeCategories(): List<StoreCategoryDto>
+    @GET("api/stores") suspend fun stores(
+        @Query("storeCategoryId") storeCategoryId: Int? = null,
+        @Query("q") q: String? = null,
+        @Query("sort") sort: String? = null,
+        @Query("take") take: Int? = null
+    ): List<StoreDto>
+    @GET("api/stores/{id}") suspend fun store(@Path("id") id: Int): StoreDetailDto
+    @POST("api/store-categories") suspend fun createStoreCategory(@Body body: StoreCategoryRequest): StoreCategoryDto
+    @PUT("api/store-categories/{id}") suspend fun updateStoreCategory(@Path("id") id: Int, @Body body: StoreCategoryRequest): MessageDto
+    @DELETE("api/store-categories/{id}") suspend fun deleteStoreCategory(@Path("id") id: Int): MessageDto
+    @POST("api/stores") suspend fun createStore(@Body body: StoreRequest): StoreDto
+    @PUT("api/stores/{id}") suspend fun updateStore(@Path("id") id: Int, @Body body: StoreRequest): StoreDto
+    @DELETE("api/stores/{id}") suspend fun deleteStore(@Path("id") id: Int): MessageDto
+
     // ---------- Danh mục, món ----------
     @GET("api/categories") suspend fun categories(): List<CategoryDto>
     @GET("api/products") suspend fun products(
         @Query("categoryId") categoryId: Int? = null,
+        @Query("storeId") storeId: Int? = null,
         @Query("q") q: String? = null,
         @Query("sort") sort: String? = null,
         @Query("isNew") isNew: Boolean? = null,

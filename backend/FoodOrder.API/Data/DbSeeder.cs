@@ -15,6 +15,7 @@ public static class DbSeeder
         await db.Database.EnsureCreatedAsync();
         await SchemaUpgrade.RunAsync(db);     // thêm bảng/cột mới cho database cũ
         await SeedVouchersAsync(db);
+        await EnsureStoresAsync(db);
         if (await db.Users.AnyAsync())
         {
             await EnsureStaffAsync(db, hasher);
@@ -152,6 +153,44 @@ public static class DbSeeder
             db.Users.Add(u);
         }
         await db.SaveChangesAsync();
+    }
+
+    // Tạo danh mục quán ăn & quán ăn mẫu
+    private static async Task EnsureStoresAsync(AppDbContext db)
+    {
+        if (!await db.StoreCategories.AnyAsync())
+        {
+            var cat1 = new StoreCategory { Name = "Cơm & Bún Phở" };
+            var cat2 = new StoreCategory { Name = "Trà Sữa & Đồ Uống" };
+            var cat3 = new StoreCategory { Name = "Thức Ăn Nhanh" };
+            var cat4 = new StoreCategory { Name = "Tráng Miệng" };
+            db.StoreCategories.AddRange(cat1, cat2, cat3, cat4);
+            await db.SaveChangesAsync();
+
+            var store1 = new Store { StoreCategoryId = cat1.Id, Name = "Quán Cơm Tấm Đêm", Description = "Chuyên cơm tấm sườn nướng, cơm gà xối mỡ", Address = "123 Nguyễn Trãi, Q.5", Phone = "0901234567", Rating = 4.8 };
+            var store2 = new Store { StoreCategoryId = cat1.Id, Name = "Phở Bò Gia Truyền 1979", Description = "Nước dùng hầm xương đậm đà, chuẩn vị", Address = "45 Lê Lai, Q.1", Phone = "0909876543", Rating = 4.9 };
+            var store3 = new Store { StoreCategoryId = cat2.Id, Name = "Trà Sữa Gong Cha", Description = "Trà sữa vị chuẩn, trân châu dai ngon", Address = "88 Sư Vạn Hạnh, Q.10", Phone = "0908888999", Rating = 4.7 };
+            var store4 = new Store { StoreCategoryId = cat3.Id, Name = "KFC Fast Food", Description = "Gà rán giòn rụm, hamburger mọng nước", Address = "100 Ba Tháng Hai, Q.10", Phone = "0903333444", Rating = 4.6 };
+            var store5 = new Store { StoreCategoryId = cat4.Id, Name = "Tiệm Chè & Flan Bà Ba", Description = "Tráng miệng thanh mát, ngọt dịu", Address = "22 Trần Hưng Đạo, Q.1", Phone = "0905555666", Rating = 4.5 };
+            db.Stores.AddRange(store1, store2, store3, store4, store5);
+            await db.SaveChangesAsync();
+        }
+
+        var stores = await db.Stores.ToListAsync();
+        if (stores.Count > 0)
+        {
+            var defaultStore = stores.First();
+            var unassigned = await db.Products.Where(p => p.StoreId == null).ToListAsync();
+            foreach (var p in unassigned)
+            {
+                if (p.Name.Contains("Cơm")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Cơm"))?.Id ?? defaultStore.Id;
+                else if (p.Name.Contains("Phở") || p.Name.Contains("Bún")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Phở"))?.Id ?? defaultStore.Id;
+                else if (p.Name.Contains("Trà")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Gong"))?.Id ?? defaultStore.Id;
+                else if (p.Name.Contains("Gà") || p.Name.Contains("Hamburger") || p.Name.Contains("Khoai")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("KFC"))?.Id ?? defaultStore.Id;
+                else p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Chè"))?.Id ?? defaultStore.Id;
+            }
+            await db.SaveChangesAsync();
+        }
     }
 
     // Gắn ảnh trong wwwroot/images cho món/danh mục chưa có ảnh.

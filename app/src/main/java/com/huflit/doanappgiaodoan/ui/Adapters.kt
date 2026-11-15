@@ -7,9 +7,11 @@ import android.widget.BaseAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.huflit.doanappgiaodoan.data.CategoryDto
 import com.huflit.doanappgiaodoan.data.ProductDto
+import com.huflit.doanappgiaodoan.data.StoreDto
 import com.huflit.doanappgiaodoan.databinding.ItemCategoryChipBinding
 import com.huflit.doanappgiaodoan.databinding.ItemProductCardBinding
 import com.huflit.doanappgiaodoan.databinding.ItemProductRowBinding
+import com.huflit.doanappgiaodoan.databinding.ItemStoreRowBinding
 import com.huflit.doanappgiaodoan.util.ImageLoader
 import com.huflit.doanappgiaodoan.util.ratingText
 import com.huflit.doanappgiaodoan.util.toMoney
@@ -45,10 +47,38 @@ fun ItemProductCardBinding.fill(p: ProductDto) {
 
 fun ItemProductRowBinding.fill(p: ProductDto) {
     tvName.text = p.name
-    tvSub.text = "${p.categoryName} · Đã bán ${p.soldCount}"
+    val storeInfo = if (!p.storeName.isNullOrBlank()) " · ${p.storeName}" else ""
+    tvSub.text = "${p.categoryName}$storeInfo · Đã bán ${p.soldCount}"
     tvPrice.text = p.minPrice.toMoney()
     tvRating.text = ratingText(p.avgRating, p.ratingCount)
     ImageLoader.load(img, imgText, p.imageUrl, p.name)
+}
+
+fun ItemStoreRowBinding.fill(s: StoreDto) {
+    tvName.text = s.name
+    tvCategory.text = "${s.storeCategoryName} · ${s.productCount} món"
+    tvAddress.text = if (!s.address.isNullOrBlank()) "📍 ${s.address}" else ""
+    tvRating.text = "⭐ ${s.rating} · Đã bán ${s.soldCount}"
+    ImageLoader.load(img, imgText, s.imageUrl, s.name)
+}
+
+// ---------- RecyclerView: Quán ăn ----------
+class StoreRowAdapter(
+    private var items: List<StoreDto> = emptyList(),
+    private val onClick: (StoreDto) -> Unit
+) : RecyclerView.Adapter<StoreRowAdapter.VH>() {
+    class VH(val b: ItemStoreRowBinding) : RecyclerView.ViewHolder(b.root)
+
+    fun submit(list: List<StoreDto>) { items = list; notifyDataSetChanged() }
+    override fun getItemCount() = items.size
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        VH(ItemStoreRowBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+    override fun onBindViewHolder(h: VH, position: Int) {
+        val s = items[position]
+        h.b.fill(s)
+        h.b.root.setOnClickListener { onClick(s) }
+    }
 }
 
 // ---------- RecyclerView: thẻ món cuộn ngang (Bán chạy) ----------
