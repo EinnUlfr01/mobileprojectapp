@@ -26,7 +26,8 @@ interface ApiService {
         @Query("q") q: String? = null,
         @Query("sort") sort: String? = null,
         @Query("isNew") isNew: Boolean? = null,
-        @Query("take") take: Int? = null
+        @Query("take") take: Int? = null,
+        @Query("storeId") storeId: Int? = null
     ): List<ProductDto>
     @GET("api/products/{id}") suspend fun product(@Path("id") id: Int): ProductDetailDto
 
@@ -35,6 +36,7 @@ interface ApiService {
     @POST("api/cart") suspend fun addToCart(@Body body: AddCartRequest): CartDto
     @PUT("api/cart/{id}") suspend fun updateCart(@Path("id") id: Int, @Body body: UpdateCartRequest): CartDto
     @DELETE("api/cart/{id}") suspend fun deleteCart(@Path("id") id: Int): CartDto
+    @DELETE("api/cart") suspend fun clearCart(): CartDto
 
     // ---------- Đơn hàng ----------
     @POST("api/orders") suspend fun createOrder(@Body body: CreateOrderRequest): OrderDto
@@ -96,11 +98,38 @@ interface ApiService {
     // Upload ảnh từ điện thoại, trả về "uploads/xxx.jpg"
     @Multipart @POST("api/uploads") suspend fun upload(@Part file: MultipartBody.Part): UploadDto
 
-    @GET("api/admin/orders") suspend fun adminOrders(@Query("status") status: String? = null, @Query("type") type: String? = null): List<OrderDto>
+    @GET("api/admin/orders") suspend fun adminOrders(
+        @Query("status") status: String? = null, @Query("type") type: String? = null, @Query("storeId") storeId: Int? = null
+    ): List<OrderDto>
+    @PUT("api/admin/orders/{id}/shipper") suspend fun assignShipper(@Path("id") id: Int, @Body body: AssignShipperRequest): MessageDto
     @PUT("api/admin/orders/{id}/status") suspend fun updateOrderStatus(@Path("id") id: Int, @Body body: UpdateStatusRequest): MessageDto
     @GET("api/admin/stats") suspend fun stats(
         @Query("groupBy") groupBy: String,
         @Query("from") from: String? = null,
         @Query("to") to: String? = null
     ): StatsDto
+
+    // ---------- Cửa hàng ----------
+    @GET("api/stores") suspend fun stores(@Query("q") q: String? = null): List<StoreDto>
+    @GET("api/stores/{id}") suspend fun store(@Path("id") id: Int): StoreDetailDto
+    @GET("api/stores/all") suspend fun allStores(@Query("q") q: String? = null): List<StoreDto>
+    @POST("api/stores") suspend fun createStore(@Body body: StoreRequest): StoreDto
+    @PUT("api/stores/{id}") suspend fun updateStore(@Path("id") id: Int, @Body body: StoreRequest): StoreDto
+    @DELETE("api/stores/{id}") suspend fun deleteStore(@Path("id") id: Int): MessageDto
+    @GET("api/stores/mine") suspend fun myStore(): StoreDto
+    @PUT("api/stores/mine") suspend fun updateMyStore(@Body body: StoreRequest): StoreDto
+    @PUT("api/stores/mine/open") suspend fun setStoreOpen(@Body body: OpenRequest): MessageDto
+
+    // ---------- Shipper (quản trị sàn) ----------
+    @GET("api/admin/shippers") suspend fun shippers(@Query("q") q: String? = null): List<ShipperDto>
+    @PUT("api/admin/users/{id}/lock") suspend fun lockUser(@Path("id") id: Int, @Body body: LockRequest): MessageDto
+
+    // ---------- Shipper (app của shipper) ----------
+    @GET("api/shipper/summary") suspend fun shipperSummary(): ShipperSummaryDto
+    @GET("api/shipper/available") suspend fun shipperAvailable(): List<OrderDto>
+    @GET("api/shipper/mine") suspend fun shipperMine(@Query("done") done: Boolean = false): List<OrderDto>
+    @PUT("api/shipper/orders/{id}/accept") suspend fun shipperAccept(@Path("id") id: Int): MessageDto
+    @PUT("api/shipper/orders/{id}/release") suspend fun shipperRelease(@Path("id") id: Int): MessageDto
+    @PUT("api/shipper/orders/{id}/pickup") suspend fun shipperPickup(@Path("id") id: Int): MessageDto
+    @PUT("api/shipper/orders/{id}/deliver") suspend fun shipperDeliver(@Path("id") id: Int): MessageDto
 }

@@ -9,7 +9,10 @@ import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.tabs.TabLayout
+import android.net.Uri
+import com.huflit.doanappgiaodoan.data.AssignShipperRequest
 import com.huflit.doanappgiaodoan.data.OrderDto
+import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.data.OrderStatus
 import com.huflit.doanappgiaodoan.data.StatRowDto
 import com.huflit.doanappgiaodoan.data.UpdateStatusRequest
@@ -20,18 +23,24 @@ import com.huflit.doanappgiaodoan.ui.user.OrderDetailActivity
 import com.huflit.doanappgiaodoan.ui.user.OrderListAdapter
 import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
+import com.huflit.doanappgiaodoan.util.showActionSheet
 import com.huflit.doanappgiaodoan.util.toMoney
 import com.huflit.doanappgiaodoan.util.toast
 import java.util.Calendar
 import java.util.Locale
 
-// Quản lý đơn: tab Danh sách đơn (ListView, đổi trạng thái) và tab Thống kê
+// Quản lý đơn: tab Danh sách đơn (ListView) và tab Thống kê.
+// - Quản trị sàn: đơn toàn sàn, đổi mọi trạng thái, gán shipper, thống kê theo quán
+// - Chủ quán: đơn của quán mình, nhận đơn (bắt đầu chuẩn bị) hoặc hủy đơn
 class ManageOrdersActivity : AppCompatActivity() {
+    companion object { const val EXTRA_STORE_ID = "storeId" }
+    private var storeFilter: Int? = null
     private lateinit var b: ActivityManageOrdersBinding
     private val adapter = OrderListAdapter(showReceiver = true)
     private val statusFilters = listOf("Mọi trạng thái") + OrderStatus.ALL
     private val typeFilters = listOf("Mọi loại khách", "Thành viên", "Khách vãng lai")
-    private val groupOptions = listOf("Theo ngày" to "day", "Theo tháng" to "month", "Theo user" to "user", "Theo danh mục" to "category")
+    private val groupOptions = listOf("Theo ngày" to "day", "Theo tháng" to "month", "Theo khách hàng" to "user", "Theo danh mục" to "category") +
+        (if (Session.isAdmin) listOf("Theo cửa hàng" to "store") else emptyList())
     private val from = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, -29) }
     private val to = Calendar.getInstance()
 
@@ -39,7 +48,12 @@ class ManageOrdersActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityManageOrdersBinding.inflate(layoutInflater)
         setContentView(b.root)
-        setupToolbar(b.toolbar, "Quản lý đơn hàng")
+        storeFilter = intent.getIntExtra(EXTRA_STORE_ID, 0).takeIf { it > 0 }
+        setupToolbar(b.toolbar, when {
+            Session.isStoreOwner -> "Đơn của quán"
+            storeFilter != null -> "Đơn của quán đã chọn"
+            else -> "Đơn hàng toàn sàn"
+        })
 
         // ---------- Tabs ----------
         b.tabs.addTab(b.tabs.newTab().setText("Danh sách đơn"))
@@ -89,38 +103,65 @@ class ManageOrdersActivity : AppCompatActivity() {
         val sPos = b.spStatus.selectedItemPosition
         val status = if (sPos <= 0) null else statusFilters[sPos]
         val type = when (b.spType.selectedItemPosition) { 1 -> "member"; 2 -> "guest"; else -> null }
-        api({ adminOrders(status, type) }) { list ->
+        api({ adminOrders(status, type, storeFilter) }) { list ->
             adapter.submit(list)
             b.tvEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
-    // Bấm vào đơn: xem chi tiết hoặc đổi trạng thái
+    // Bấm vào đơn: các thao tác theo vai trò
     private fun showOrderActions(o: OrderDto) {
-        val confirmPaid = !o.isPaid && o.paymentMethod != "Tiền mặt" && o.status != OrderStatus.CANCELLED
-        val options = arrayOf("Xem chi tiết đơn") + OrderStatus.ALL.map { "Chuyển sang: $it" } +
-            (if (confirmPaid) arrayOf("Xác nhận đã nhận tiền (${o.total.toMoney()})") else emptyArray())
-        AlertDialog.Builder(this)
-            .setTitle("Đơn #${o.code} · ${o.status}\n${o.receiverName} · ${o.phone}")
-            .setItems(options) { _, which ->
-                if (confirmPaid && which == options.size - 1) {
-                    api({ confirmPaid(o.id) }) { toast(it.message ?: "Đã xác nhận"); loadOrders() }
-                } else if (which == 0) {
-                    startActivity(Intent(this, OrderDetailActivity::class.java).putExtra(Nav.EXTRA_ID, o.id))
-                } else {
-                    val status = OrderStatus.ALL[which - 1]
-                    if (status == OrderStatus.CANCELLED) askCancelReason(o)
-                    else changeStatus(o, status, null)
-                }
+        val actions = mutableListOf<Pair<String, () -> Unit>>()
+        actions += "Xem chi tiết đơn" to { startActivity(Intent(this, OrderDetailActivity::class.java).putExtra(Nav.EXTRA_ID, o.id)) }
+        actions += "Gọi khách (${o.phone})" to { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${o.phone}"))) }
+        if (Session.isAdmin) {
+            if (o.status != OrderStatus.DONE && o.status != OrderStatus.CANCELLED)
+                actions += (if (o.shipperName == null) "Gán shipper" else "Đổi shipper (${o.shipperName})") to { pickShipper(o) }
+            OrderStatus.ALL.filter { it != o.status }.forEach { st ->
+                actions += "Chuyển sang: $st" to { if (st == OrderStatus.CANCELLED) askCancelReason(o) else changeStatus(o, st, null) }
             }
-            .show()
+        } else {
+            // Chủ quán: nhận đơn hoặc hủy (khi shipper chưa nhận); lấy món và giao do shipper cập nhật
+            if (o.status == OrderStatus.PENDING)
+                actions += "Nhận đơn, bắt đầu chuẩn bị món" to { changeStatus(o, OrderStatus.PREPARING, null) }
+            if (o.status == OrderStatus.PENDING || (o.status == OrderStatus.PREPARING && o.shipperId == null))
+                actions += "Hủy đơn" to { askCancelReason(o) }
+        }
+        if (!o.isPaid && o.paymentMethod != "Tiền mặt" && o.status != OrderStatus.CANCELLED)
+            actions += "Xác nhận đã nhận tiền (${o.total.toMoney()})" to {
+                api({ confirmPaid(o.id) }) { toast(it.message ?: "Đã xác nhận"); loadOrders() }
+            }
+        val info = listOfNotNull(
+            o.storeName?.let { "Quán: $it" },
+            "Khách: ${o.receiverName} · ${o.phone}",
+            "Giao tới: ${o.address}",
+            "Tổng: ${o.total.toMoney()} · ${o.paymentMethod}" + if (o.isPaid) " (đã thanh toán)" else "",
+            "Shipper: " + (o.shipperName?.let { "$it · ${o.shipperPhone}" } ?: "chưa có")
+        ).joinToString("\n")
+        showActionSheet("Đơn #${o.code} · ${o.status}", info, actions)
+    }
+
+    // Quản trị sàn chọn shipper cho đơn (shipper đang khóa không hiện)
+    private fun pickShipper(o: OrderDto) {
+        api({ shippers() }) { list ->
+            val free = list.filter { !it.isLocked }
+            if (free.isEmpty()) { toast("Chưa có shipper nào, hãy thêm ở Quản lý shipper"); return@api }
+            val names = free.map { "${it.fullName} · ${it.vehiclePlate ?: ""} · đang giao ${it.delivering}" } +
+                (if (o.shipperId != null) listOf("Bỏ gán shipper") else emptyList())
+            AlertDialog.Builder(this).setTitle("Chọn shipper cho đơn #${o.code}")
+                .setItems(names.toTypedArray()) { _, i ->
+                    val id = free.getOrNull(i)?.id
+                    api({ assignShipper(o.id, AssignShipperRequest(id)) }) { toast(it.message ?: "Đã cập nhật"); loadOrders() }
+                }
+                .setNegativeButton("Đóng", null).show()
+        }
     }
 
     private fun changeStatus(o: OrderDto, status: String, note: String?) {
         api({ updateOrderStatus(o.id, UpdateStatusRequest(status, note)) }) { toast("Đã chuyển sang $status"); loadOrders() }
     }
 
-    // Cửa hàng hủy đơn phải ghi lý do, khách sẽ thấy trong thông báo và dòng thời gian
+    // Hủy đơn phải ghi lý do, khách sẽ thấy trong thông báo và dòng thời gian
     private fun askCancelReason(o: OrderDto) {
         val reasons = arrayOf("Hết món", "Quán sắp đóng cửa", "Không liên lạc được khách", "Ngoài khu vực giao hàng", "Lý do khác")
         AlertDialog.Builder(this).setTitle("Lý do hủy đơn #${o.code}")

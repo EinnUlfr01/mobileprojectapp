@@ -76,6 +76,8 @@ class ProductDetailActivity : AppCompatActivity() {
             updateHeart()
             b.toolbar.title = p.name
             b.tvName.text = p.name
+            b.tvStore.text = "🏪 ${p.storeName}" + (if (p.storeIsOpen) "  ›" else " (đang đóng cửa)  ›")
+            b.tvStore.setOnClickListener { Nav.store(this, p.storeId) }
             b.tvDesc.text = p.description ?: ""
             b.ratingBar.rating = p.avgRating.toFloat()
             b.tvRating.text = "${ratingText(p.avgRating, p.ratingCount)} · Đã bán ${p.soldCount}"
@@ -111,16 +113,41 @@ class ProductDetailActivity : AppCompatActivity() {
         b.btnAddCart.text = "Thêm vào giỏ · ${(price * qty).toMoney()}"
     }
 
+    // Giống GrabFood: mỗi giỏ chỉ chứa món của 1 quán. Giỏ đang có món quán khác thì hỏi xóa giỏ cũ.
     private fun doAddToCart() {
         val p = current ?: return
         val size = selectedSize() ?: run { toast("Vui lòng chọn size"); return }
+        if (!p.storeIsOpen) { toast("${p.storeName} đang đóng cửa, bạn quay lại sau nhé"); return }
         val price = p.sizes.first { it.size == size }.price
         if (Session.isLoggedIn) {
-            api({ addToCart(AddCartRequest(p.id, size, qty)) }) { toast("Đã thêm vào giỏ hàng") }
+            api({ cart() }) { cart ->
+                if (cart.storeId != null && cart.storeId != p.storeId && cart.items.isNotEmpty())
+                    askReplaceCart(cart.storeName ?: "quán khác") {
+                        api({ clearCart() }) { addServer(p, size) }
+                    }
+                else addServer(p, size)
+            }
         } else {
-            GuestCart.add(GuestCartItem(p.id, p.name, p.imageUrl, size, price, qty))
-            toast("Đã thêm vào giỏ hàng")
+            val add = {
+                GuestCart.add(GuestCartItem(p.id, p.name, p.imageUrl, size, price, qty, p.storeId, p.storeName))
+                toast("Đã thêm vào giỏ hàng")
+            }
+            val other = GuestCart.otherStoreName(p.storeId)
+            if (other != null) askReplaceCart(other) { GuestCart.clear(); add() } else add()
         }
+    }
+
+    private fun addServer(p: ProductDto, size: String) {
+        api({ addToCart(AddCartRequest(p.id, size, qty)) }) { toast("Đã thêm vào giỏ hàng") }
+    }
+
+    private fun askReplaceCart(otherStore: String, onReplace: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle("Đổi quán?")
+            .setMessage("Giỏ hàng đang có món của $otherStore. Mỗi đơn chỉ đặt món của 1 quán.\nXóa giỏ cũ và thêm món này?")
+            .setPositiveButton("Xóa giỏ và thêm") { _, _ -> onReplace() }
+            .setNegativeButton("Giữ giỏ cũ", null)
+            .show()
     }
 
     // "Có thể bạn cũng thích": món bán chạy cùng danh mục, bỏ món đang xem

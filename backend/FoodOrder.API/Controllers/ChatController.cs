@@ -85,17 +85,17 @@ public class ChatController(AppDbContext db, IHubContext<ChatHub> hub) : Control
     public async Task<CountDto> Unread()
     {
         var uid = User.UserId();
-        var isStaff = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.MenuManager) || User.IsInRole(Roles.OrderStaff);
+        var isStaff = User.IsInRole(Roles.Admin);
         var count = isStaff
             ? await db.Conversations.SumAsync(c => (int?)c.UnreadByStaff) ?? 0
             : await db.Conversations.Where(c => c.CustomerId == uid).Select(c => (int?)c.UnreadByCustomer).FirstOrDefaultAsync() ?? 0;
         return new CountDto(count);
     }
 
-    // ===================== Phía cửa hàng (mọi vai trò quản trị) =====================
+    // ===================== Phía sàn (quản trị sàn trả lời, vai trò Chăm sóc khách hàng) =====================
 
     [HttpGet("conversations")]
-    [Authorize(Roles = Roles.AllStaff)]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<List<ConversationDto>> Conversations(string? q)
     {
         var query = db.Conversations.Include(c => c.Customer).Where(c => c.LastMessage != null);
@@ -107,7 +107,7 @@ public class ChatController(AppDbContext db, IHubContext<ChatHub> hub) : Control
     }
 
     [HttpGet("conversations/{id:int}")]
-    [Authorize(Roles = Roles.AllStaff)]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<ChatThreadDto>> Thread(int id, int afterId = 0)
     {
         var c = await db.Conversations.Include(x => x.Customer).FirstOrDefaultAsync(x => x.Id == id);
@@ -122,7 +122,7 @@ public class ChatController(AppDbContext db, IHubContext<ChatHub> hub) : Control
     }
 
     [HttpPost("conversations/{id:int}")]
-    [Authorize(Roles = Roles.AllStaff)]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<ChatMessageDto>> Reply(int id, SendMessageRequest r)
     {
         var me = await Me();
@@ -134,7 +134,7 @@ public class ChatController(AppDbContext db, IHubContext<ChatHub> hub) : Control
         if (content.Length > MaxLength) return BadRequest(new MessageDto("Tin nhắn tối đa 1000 ký tự"));
 
         // Khách thấy tên "Cửa hàng" kèm tên nhân viên trả lời
-        var m = new ChatMessage { ConversationId = c.Id, SenderId = me.Id, SenderName = "Cửa hàng · " + me.FullName, IsFromStaff = true, Content = content };
+        var m = new ChatMessage { ConversationId = c.Id, SenderId = me.Id, SenderName = "Hỗ trợ · " + me.FullName, IsFromStaff = true, Content = content };
         db.ChatMessages.Add(m);
         c.LastMessage = content;
         c.LastMessageAt = m.CreatedAt;

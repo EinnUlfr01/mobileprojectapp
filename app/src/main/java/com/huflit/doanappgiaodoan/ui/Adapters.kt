@@ -7,7 +7,9 @@ import android.widget.BaseAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.huflit.doanappgiaodoan.data.CategoryDto
 import com.huflit.doanappgiaodoan.data.ProductDto
+import com.huflit.doanappgiaodoan.data.StoreDto
 import com.huflit.doanappgiaodoan.databinding.ItemCategoryChipBinding
+import com.huflit.doanappgiaodoan.databinding.ItemStoreCardBinding
 import com.huflit.doanappgiaodoan.databinding.ItemProductCardBinding
 import com.huflit.doanappgiaodoan.databinding.ItemProductRowBinding
 import com.huflit.doanappgiaodoan.util.ImageLoader
@@ -34,9 +36,41 @@ class CategoryChipAdapter(
     }
 }
 
+// ---------- RecyclerView: quán ăn cuộn ngang (trang chủ) ----------
+class StoreCardAdapter(
+    private var items: List<StoreDto> = emptyList(),
+    private val onClick: (StoreDto) -> Unit
+) : RecyclerView.Adapter<StoreCardAdapter.VH>() {
+    class VH(val b: ItemStoreCardBinding) : RecyclerView.ViewHolder(b.root)
+
+    fun submit(list: List<StoreDto>) { items = list; notifyDataSetChanged() }
+    override fun getItemCount() = items.size
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        VH(ItemStoreCardBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+    override fun onBindViewHolder(h: VH, position: Int) {
+        val s = items[position]
+        h.b.tvName.text = s.name
+        h.b.tvAddress.text = s.address
+        h.b.tvInfo.text = storeInfo(s)
+        h.b.tvClosed.visibility = if (s.isOpen) View.GONE else View.VISIBLE
+        ImageLoader.load(h.b.img, h.b.imgText, s.imageUrl, s.name)
+        h.b.root.setOnClickListener { onClick(s) }
+    }
+}
+
+// "★ 4.8 · 12 món · 30 đơn"
+fun storeInfo(s: StoreDto): String = listOfNotNull(
+    if (s.avgRating > 0) "★ %.1f".format(java.util.Locale.US, s.avgRating) else null,
+    "${s.productCount} món",
+    if (s.orderCount > 0) "${s.orderCount} đơn" else null
+).joinToString(" · ")
+
 // Đổ dữ liệu món vào thẻ (dùng chung cho RecyclerView và GridView)
 fun ItemProductCardBinding.fill(p: ProductDto) {
     tvName.text = p.name
+    tvStore.text = p.storeName
+    tvStore.visibility = if (p.storeName.isBlank()) View.GONE else View.VISIBLE
     tvPrice.text = p.minPrice.toMoney()
     tvRating.text = ratingText(p.avgRating, p.ratingCount)
     tvNew.visibility = if (p.isNew) View.VISIBLE else View.GONE
@@ -45,7 +79,7 @@ fun ItemProductCardBinding.fill(p: ProductDto) {
 
 fun ItemProductRowBinding.fill(p: ProductDto) {
     tvName.text = p.name
-    tvSub.text = "${p.categoryName} · Đã bán ${p.soldCount}"
+    tvSub.text = listOf(p.storeName, p.categoryName, "Đã bán ${p.soldCount}").filter { it.isNotBlank() }.joinToString(" · ")
     tvPrice.text = p.minPrice.toMoney()
     tvRating.text = ratingText(p.avgRating, p.ratingCount)
     ImageLoader.load(img, imgText, p.imageUrl, p.name)

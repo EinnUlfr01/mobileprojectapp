@@ -7,7 +7,7 @@
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
         <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center" android:padding="32dp"
-            android:text="Gửi tin nhắn để được cửa hàng hỗ trợ về món ăn, đơn hàng, giao hàng…" android:visibility="gone" />
+            android:text="Gửi tin nhắn để được sàn hỗ trợ về món ăn, đơn hàng, giao hàng…" android:visibility="gone" />
         <!-- RecyclerView: danh sách tin nhắn, tin của mình bên phải, tin của người kia bên trái -->
         <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvMessages" android:layout_width="match_parent"
             android:layout_height="match_parent" android:clipToPadding="false" android:padding="12dp" />

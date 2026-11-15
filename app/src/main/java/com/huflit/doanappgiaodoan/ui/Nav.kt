@@ -5,6 +5,8 @@ import android.content.Intent
 import com.huflit.doanappgiaodoan.MainActivity
 import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.ui.admin.AdminDashboardActivity
+import com.huflit.doanappgiaodoan.ui.shipper.ShipperActivity
+import com.huflit.doanappgiaodoan.ui.user.StoreActivity
 import com.huflit.doanappgiaodoan.ui.user.CategoryProductsActivity
 import com.huflit.doanappgiaodoan.ui.user.ProductDetailActivity
 
@@ -17,12 +19,21 @@ object Nav {
     fun product(ctx: Context, id: Int) =
         ctx.startActivity(Intent(ctx, ProductDetailActivity::class.java).putExtra(EXTRA_ID, id))
 
+    fun store(ctx: Context, id: Int) =
+        ctx.startActivity(Intent(ctx, StoreActivity::class.java).putExtra(EXTRA_ID, id))
+
+    // Màn chính theo vai trò: admin sàn / chủ quán -> trang quản trị, shipper -> màn shipper, còn lại -> trang chủ mua hàng
+    fun homeClass(): Class<*> = when {
+        Session.isManager -> AdminDashboardActivity::class.java
+        Session.isShipper -> ShipperActivity::class.java
+        else -> MainActivity::class.java
+    }
+
     fun category(ctx: Context, id: Int, name: String) =
         ctx.startActivity(Intent(ctx, CategoryProductsActivity::class.java).putExtra(EXTRA_ID, id).putExtra(EXTRA_NAME, name))
 
     // Về trang chủ đúng vai trò, xóa các màn cũ
     fun home(ctx: Context) {
-        val target = if (Session.isStaff) AdminDashboardActivity::class.java else MainActivity::class.java
-        ctx.startActivity(Intent(ctx, target).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        ctx.startActivity(Intent(ctx, homeClass()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
     }
 }

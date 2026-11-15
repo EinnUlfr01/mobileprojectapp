@@ -5,6 +5,10 @@
     android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
     <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
         android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <!-- Lọc theo quán: chỉ quản trị sàn thấy -->
+    <Spinner android:id="@+id/spStore" android:layout_width="match_parent" android:layout_height="48dp"
+        android:layout_marginStart="12dp" android:layout_marginTop="12dp" android:layout_marginEnd="12dp"
+        android:background="@drawable/bg_card" android:visibility="gone" />
     <Spinner android:id="@+id/spCategory" android:layout_width="match_parent" android:layout_height="48dp"
         android:layout_margin="12dp" android:background="@drawable/bg_card" />
     <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">

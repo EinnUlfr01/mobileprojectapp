@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Màn 1 quán ăn: thông tin quán + danh sách món của quán -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <androidx.core.widget.NestedScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <FrameLayout android:layout_width="match_parent" android:layout_height="180dp">
+                <TextView android:id="@+id/imgText" style="@style/Placeholder" android:textSize="56sp"
+                    android:layout_width="match_parent" android:layout_height="match_parent" />
+                <ImageView android:id="@+id/img" android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:contentDescription="Ảnh quán" android:scaleType="centerCrop" android:visibility="gone" />
+            </FrameLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_margin="12dp" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="14dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:gravity="center_vertical" android:orientation="horizontal">
+                    <TextView android:id="@+id/tvName" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                        android:textColor="@color/ink" android:textSize="20sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvOpen" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:background="@drawable/bg_badge" android:paddingStart="10dp" android:paddingEnd="10dp"
+                        android:paddingTop="2dp" android:paddingBottom="2dp" android:textSize="12sp" android:textStyle="bold" />
+                </LinearLayout>
+                <TextView android:id="@+id/tvInfo" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" android:textColor="@color/star" android:textSize="13sp" />
+                <TextView android:id="@+id/tvAddress" style="@style/Muted" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="14sp" />
+                <TextView android:id="@+id/tvDesc" style="@style/Muted" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textSize="14sp" />
+                <Button android:id="@+id/btnCall" style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content" android:layout_height="44dp" android:layout_marginTop="8dp" android:text="Gọi quán" />
+            </LinearLayout>
+            <TextView android:id="@+id/tvMenuTitle" style="@style/SectionTitle" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="Thực đơn" />
+            <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:padding="16dp" android:text="Quán chưa có món nào" android:visibility="gone" />
+            <!-- RecyclerView: món của quán -->
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvProducts" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:nestedScrollingEnabled="false"
+                android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="8dp" android:paddingBottom="12dp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

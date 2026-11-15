@@ -50,18 +50,26 @@ public class OrdersController(AppDbContext db, VnPayService vnPay, BankQrService
             IsPaid = false,
             ShippingFee = ShippingFee
         };
+        Store? store = null;
         foreach (var l in lines)
         {
             if (l.Quantity < 1) return BadRequest(new MessageDto("Số lượng không hợp lệ"));
-            var p = await db.Products.Include(x => x.Sizes).FirstOrDefaultAsync(x => x.Id == l.ProductId);
+            var p = await db.Products.Include(x => x.Sizes).Include(x => x.Store).FirstOrDefaultAsync(x => x.Id == l.ProductId);
             var size = p?.Sizes.FirstOrDefault(s => s.Size == l.Size);
             if (p == null || size == null) return BadRequest(new MessageDto("Có món không còn bán, vui lòng kiểm tra giỏ"));
+            // Mỗi đơn chỉ gồm món của 1 quán
+            store ??= p.Store;
+            if (p.StoreId != store!.Id) return BadRequest(new MessageDto("Mỗi đơn chỉ đặt món của 1 quán, vui lòng tách đơn"));
             order.Items.Add(new OrderItem
             {
                 ProductId = p.Id, ProductName = p.Name, Size = size.Size, Quantity = l.Quantity,
                 UnitPrice = size.Price, LineTotal = size.Price * l.Quantity
             });
         }
+        if (store == null || !store.IsActive) return BadRequest(new MessageDto("Quán đang tạm ngừng hoạt động"));
+        if (!store.IsOpen) return BadRequest(new MessageDto($"{store.Name} đang đóng cửa, bạn quay lại sau nhé"));
+        order.StoreId = store.Id;
+        order.Store = store;
         order.Subtotal = order.Items.Sum(i => i.LineTotal);
 
         // Mã giảm giá
@@ -87,7 +95,7 @@ public class OrdersController(AppDbContext db, VnPayService vnPay, BankQrService
         if (uid != null)
         {
             NotificationsController.Add(db, uid.Value, $"Đặt hàng thành công #{order.Code}",
-                $"Đơn {order.Total:N0}đ đang chờ cửa hàng xác nhận.", order.Id);
+                $"Đơn {order.Total:N0}đ đang chờ {store.Name} xác nhận.", order.Id);
             await db.SaveChangesAsync();
         }
         return order.ToDto() with { PaymentUrl = paymentUrl };
@@ -99,22 +107,25 @@ public class OrdersController(AppDbContext db, VnPayService vnPay, BankQrService
     public async Task<List<OrderDto>> MyOrders(string? status)
     {
         var uid = User.UserId();
-        var q = db.Orders.Include(o => o.Items).Where(o => o.UserId == uid);
+        var q = db.Orders.WithDetails().Where(o => o.UserId == uid);
         if (!string.IsNullOrWhiteSpace(status)) q = q.Where(o => o.Status == status);
         var list = await q.OrderByDescending(o => o.CreatedAt).ToListAsync();
         return list.Select(o => o.ToDto()).ToList();
     }
 
-    // OrderDetailActivity: chủ đơn hoặc admin
+    // OrderDetailActivity: chủ đơn, quản trị sàn, chủ quán của đơn, shipper của đơn (hoặc shipper xem đơn đang chờ nhận)
     [HttpGet("{id:int}")]
     [Authorize]
     public async Task<ActionResult<OrderDto>> Get(int id)
     {
-        var o = await db.Orders.Include(x => x.Items).Include(x => x.History).FirstOrDefaultAsync(x => x.Id == id);
+        var o = await db.Orders.WithDetails().Include(x => x.History).FirstOrDefaultAsync(x => x.Id == id);
         if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
         var uid = User.UserId();
-        var isOrderManager = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.OrderStaff);
-        if (o.UserId != uid && !isOrderManager) return Forbid();
+        var allowed = o.UserId == uid
+            || User.IsInRole(Roles.Admin)
+            || (User.IsInRole(Roles.StoreOwner) && o.Store?.OwnerId == uid)
+            || (User.IsInRole(Roles.Shipper) && (o.ShipperId == uid || (o.ShipperId == null && o.Status == OrderStatus.Preparing)));
+        if (!allowed) return Forbid();
         var reviewed = uid == null ? new HashSet<int>() :
             (await db.Reviews.Where(r => r.OrderId == id && r.UserId == uid).Select(r => r.ProductId).ToListAsync()).ToHashSet();
         return o.ToDto(reviewed);
@@ -143,6 +154,11 @@ public class OrdersController(AppDbContext db, VnPayService vnPay, BankQrService
         var uid = User.UserId()!.Value;
         var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && x.UserId == uid);
         if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        // Giỏ đang có món quán khác thì không trộn được
+        var otherStore = await db.CartItems.Where(c => c.UserId == uid && c.Product!.StoreId != o.StoreId)
+            .Select(c => c.Product!.Store!.Name).FirstOrDefaultAsync();
+        if (otherStore != null)
+            return Conflict(new MessageDto($"Giỏ hàng đang có món của {otherStore}. Hãy xóa giỏ trước khi đặt lại đơn này."));
         int added = 0, skipped = 0;
         foreach (var it in o.Items)
         {
@@ -157,7 +173,7 @@ public class OrdersController(AppDbContext db, VnPayService vnPay, BankQrService
         return new MessageDto(skipped == 0 ? "Đã thêm các món vào giỏ hàng" : $"Đã thêm {added} món, {skipped} món không còn bán");
     }
 
-    // Người dùng tự hủy khi đơn còn "Đang xử lý"
+    // Người dùng tự hủy khi quán chưa nhận đơn ("Đang xử lý")
     [HttpPut("{id:int}/cancel")]
     [Authorize]
     public async Task<ActionResult<MessageDto>> Cancel(int id, CancelRequest r)
@@ -168,9 +184,7 @@ public class OrdersController(AppDbContext db, VnPayService vnPay, BankQrService
         if (o.Status != OrderStatus.Pending) return BadRequest(new MessageDto("Chỉ hủy được đơn đang xử lý"));
         var reason = string.IsNullOrWhiteSpace(r?.Reason) ? "Khách hủy đơn" : r.Reason.Trim();
         if (reason.Length > 300) reason = reason[..300];
-        o.Status = OrderStatus.Cancelled;
-        o.CancelReason = reason;
-        db.OrderStatusLogs.Add(new OrderStatusLog { OrderId = o.Id, Status = OrderStatus.Cancelled, Note = reason, ChangedBy = "Khách hàng" });
+        await OrderFlow.ChangeStatusAsync(db, o, OrderStatus.Cancelled, reason, "Khách hàng");
         await db.SaveChangesAsync();
         return new MessageDto("Đã hủy đơn");
     }

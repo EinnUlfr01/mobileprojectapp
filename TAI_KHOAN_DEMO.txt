@@ -1,44 +1,61 @@
-TÀI KHOẢN DEMO - ĐỀ TÀI 10: ỨNG DỤNG ĐẶT THỨC ĂN
-=================================================
+TÀI KHOẢN DEMO - ĐỀ TÀI 10: ỨNG DỤNG ĐẶT THỨC ĂN (SÀN NHIỀU QUÁN)
+=================================================================
 
 1. TÀI KHOẢN ĐĂNG NHẬP
--------------------------------------------------
-Vai trò              Email                 Mật khẩu
-Quản trị viên        admin@gmail.com       Admin@123
-Quản lý thực đơn     menu@gmail.com        Menu@123
-Nhân viên đơn hàng   donhang@gmail.com     Donhang@123
-Khách hàng           user@gmail.com        123456
-Khách vãng lai       (bấm "Tiếp tục với tư cách khách", không cần tài khoản)
+-----------------------------------------------------------------
+Vai trò          Email                  Mật khẩu      Ghi chú
+Quản trị sàn     admin@gmail.com        Admin@123
+Chủ cửa hàng     quan1@gmail.com        Quan@123      Cơm Tấm Sài Gòn
+Chủ cửa hàng     quan2@gmail.com        Quan@123      Phở Bò Hà Nội
+Chủ cửa hàng     quan3@gmail.com        Quan@123      Trà Sữa Nhà Làm
+Chủ cửa hàng     quan4@gmail.com        Quan@123      Gà Rán Chicken Plus
+Shipper          shipper1@gmail.com     Shipper@123   Trần Văn Bình, 59X1-123.45
+Shipper          shipper2@gmail.com     Shipper@123   Lê Thị Cúc, 59X2-678.90
+Khách hàng       user@gmail.com         123456
+Khách vãng lai   (bấm "Tiếp tục với tư cách khách", không cần tài khoản)
 
 Phân quyền:
-- Quản trị viên: làm được mọi thứ (người dùng, danh mục, món, mã giảm giá, đơn hàng, tin nhắn)
-- Quản lý thực đơn: chỉ quản lý danh mục, món ăn, ảnh món
-- Nhân viên đơn hàng: chỉ quản lý đơn hàng, thống kê, tin nhắn
+- Quản trị sàn: quản lý cửa hàng (thêm quán, gán chủ quán, khóa quán), quản lý shipper
+  (thêm, khóa), người dùng, danh mục, món của mọi quán, toàn bộ đơn + gán shipper,
+  mã giảm giá, thống kê theo quán, trả lời chat hỗ trợ khách hàng
+- Chủ cửa hàng: thông tin quán, mở/đóng quán, món của quán, nhận đơn / hủy đơn của quán,
+  thống kê doanh thu quán
+- Shipper: xem đơn chờ nhận, nhận đơn, báo đã lấy món, báo đã giao, gọi khách/quán
 
-2. MÃ GIẢM GIÁ
--------------------------------------------------
+2. LUỒNG MỘT ĐƠN HÀNG
+-----------------------------------------------------------------
+Khách đặt món của 1 quán      -> Đang xử lý   (chờ quán xác nhận)
+Chủ quán bấm "Nhận đơn"       -> Đang chuẩn bị (chờ shipper)
+Shipper bấm "Nhận đơn này"    -> đơn có shipper
+Shipper bấm "Đã lấy món"      -> Đang giao
+Shipper bấm "Đã giao xong"    -> Hoàn thành
+Mỗi bước khách đều nhận thông báo và thấy trên dòng thời gian của đơn.
+
+3. MÃ GIẢM GIÁ
+-----------------------------------------------------------------
 GIAM20     Giảm 20%, tối đa 30.000đ, đơn từ 100.000đ
 GIAM10K    Giảm 10.000đ, đơn từ 50.000đ
 FREESHIP   Miễn phí giao hàng
 
-3. CÁC BƯỚC CHẠY TRƯỚC KHI DEMO
--------------------------------------------------
-Bước 1 - Chạy API (mở terminal riêng, để nguyên cửa sổ này suốt buổi demo):
+4. CÁC BƯỚC CHẠY TRƯỚC KHI DEMO
+-----------------------------------------------------------------
+Bước 1 - Chạy API (để nguyên cửa sổ này suốt buổi demo):
     cd D:\Projects\DoAnAppGiaodoan\backend\FoodOrder.API
     dotnet run
 
-Bước 2 - Nối 2 máy vào API (gõ trong Terminal của Android Studio):
+Bước 2 - Nối 2 máy vào API (Terminal của Android Studio):
     D:\Android\SDK\platform-tools\adb.exe -d reverse tcp:5090 tcp:5090
     D:\Android\SDK\platform-tools\adb.exe -e reverse tcp:5090 tcp:5090
     (-d = điện thoại cắm cáp USB, -e = máy ảo)
 
-Bước 3 - Chọn từng máy ở ô thiết bị trên thanh công cụ Android Studio rồi bấm Run.
+Bước 3 - Chọn từng máy ở ô thiết bị rồi bấm Run.
 
-Lưu ý: app báo "Không kết nối được server" thì chạy lại 2 lệnh ở Bước 2
-(khi rút cáp cắm lại, tắt mở máy ảo hoặc mở lại Android Studio).
+Lưu ý: app báo "Không kết nối được server" thì chạy lại 2 lệnh ở Bước 2.
 
-4. KỊCH BẢN DEMO CHAT TRỰC TUYẾN
--------------------------------------------------
-- Điện thoại đăng nhập khách hàng, bấm biểu tượng tin nhắn ở trang chủ, gửi tin.
-- Máy ảo đăng nhập admin@gmail.com, có thông báo ngay, mở ô "Tin nhắn" để trả lời.
-- Gõ phím ở một bên thì bên kia hiện "đang nhập…".
+5. KỊCH BẢN DEMO GỢI Ý (2 MÁY)
+-----------------------------------------------------------------
+- Điện thoại (khách): trang chủ -> Quán ngon trên sàn -> chọn quán -> thêm món -> đặt hàng.
+- Máy ảo (chủ quán quan1..4 đúng quán vừa đặt): Đơn của quán -> bấm đơn -> Nhận đơn.
+- Máy ảo (đăng xuất, đăng nhập shipper1): Đơn chờ nhận -> Nhận đơn -> Đã lấy món -> Đã giao xong.
+- Điện thoại: mở chi tiết đơn xem dòng thời gian 4 bước, có tên quán và shipper.
+- Máy ảo (admin): Quản lý cửa hàng, Quản lý shipper, Đơn hàng toàn sàn (gán shipper), Thống kê theo cửa hàng.

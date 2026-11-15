@@ -10,24 +10,42 @@ public class User
     public string PasswordHash { get; set; } = "";
     public string? DefaultAddress { get; set; }
     public string Role { get; set; } = Roles.User;
+    public string? VehiclePlate { get; set; }   // biển số xe (shipper)
+    public bool IsLocked { get; set; }          // bị khóa thì không đăng nhập được
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-// Vai trò: 1 vai trò khách hàng + 3 vai trò quản trị
+// Bảng CuaHang: mỗi quán ăn trên sàn, do 1 chủ quán quản lý
+public class Store
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string Address { get; set; } = "";
+    public string Phone { get; set; } = "";
+    public string? Description { get; set; }
+    public string? ImageUrl { get; set; }
+    public int? OwnerId { get; set; }
+    public User? Owner { get; set; }
+    public bool IsOpen { get; set; } = true;     // chủ quán bật/tắt nhận đơn
+    public bool IsActive { get; set; } = true;   // admin sàn duyệt / tạm khóa quán
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public List<Product> Products { get; set; } = new();
+}
+
+// Vai trò của sàn giao đồ ăn: khách hàng, quản trị sàn, chủ quán, shipper
 public static class Roles
 {
-    public const string User = "User";                 // Khách hàng thành viên
-    public const string Admin = "Admin";               // Quản trị viên: toàn quyền
-    public const string MenuManager = "MenuManager";   // Quản lý thực đơn: danh mục, món ăn
-    public const string OrderStaff = "OrderStaff";     // Nhân viên đơn hàng: xử lý đơn, thống kê
+    public const string User = "User";               // Khách hàng thành viên
+    public const string Admin = "Admin";             // Quản trị sàn: quản lý cửa hàng, shipper, người dùng, toàn bộ đơn
+    public const string StoreOwner = "StoreOwner";   // Chủ cửa hàng: món ăn, đơn hàng, thông tin quán của mình
+    public const string Shipper = "Shipper";         // Shipper: nhận đơn, lấy món, giao cho khách
 
     // Dùng trong [Authorize(Roles = ...)]
-    public const string AllStaff = Admin + "," + MenuManager + "," + OrderStaff;
-    public const string MenuManagers = Admin + "," + MenuManager;
-    public const string OrderManagers = Admin + "," + OrderStaff;
+    public const string AdminOrOwner = Admin + "," + StoreOwner;
 
-    public static readonly string[] All = { User, Admin, MenuManager, OrderStaff };
-    public static bool IsStaff(string role) => role is Admin or MenuManager or OrderStaff;
+    public static readonly string[] All = { User, Admin, StoreOwner, Shipper };
+    // Nhân viên chăm sóc khách hàng (trả lời chat) = quản trị sàn
+    public static bool IsStaff(string role) => role == Admin;
 }
 
 // Bảng DanhMuc
@@ -45,6 +63,8 @@ public class Product
     public int Id { get; set; }
     public int CategoryId { get; set; }
     public Category? Category { get; set; }
+    public int StoreId { get; set; }
+    public Store? Store { get; set; }
     public string Name { get; set; } = "";
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
@@ -78,11 +98,12 @@ public class CartItem
 
 public static class OrderStatus
 {
-    public const string Pending = "Đang xử lý";
-    public const string Shipping = "Đang giao";
+    public const string Pending = "Đang xử lý";       // chờ quán xác nhận
+    public const string Preparing = "Đang chuẩn bị";  // quán đã nhận, đang làm món, chờ shipper
+    public const string Shipping = "Đang giao";       // shipper đã lấy món, đang giao
     public const string Done = "Hoàn thành";
     public const string Cancelled = "Đã hủy";
-    public static readonly string[] All = { Pending, Shipping, Done, Cancelled };
+    public static readonly string[] All = { Pending, Preparing, Shipping, Done, Cancelled };
 }
 
 // Bảng DonHang: UserId = null nghĩa là khách vãng lai
@@ -92,6 +113,10 @@ public class Order
     public string Code { get; set; } = "";
     public int? UserId { get; set; }
     public User? User { get; set; }
+    public int? StoreId { get; set; }          // quán bán đơn này
+    public Store? Store { get; set; }
+    public int? ShipperId { get; set; }        // shipper nhận giao (null = chưa có shipper)
+    public User? Shipper { get; set; }
     public string ReceiverName { get; set; } = "";
     public string Phone { get; set; } = "";
     public string Address { get; set; } = "";

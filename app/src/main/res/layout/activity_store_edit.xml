@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thêm / sửa quán: quản trị sàn (có gán chủ quán, khóa quán) và chủ quán (sửa thông tin quán mình) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+            <FrameLayout android:layout_width="match_parent" android:layout_height="140dp">
+                <TextView android:id="@+id/imgText" style="@style/Placeholder" android:textSize="48sp"
+                    android:layout_width="match_parent" android:layout_height="match_parent" />
+                <ImageView android:id="@+id/img" android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:contentDescription="Ảnh quán" android:scaleType="centerCrop" android:visibility="gone" />
+            </FrameLayout>
+            <Button android:id="@+id/btnPickImage" style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp"
+                android:text="Chọn ảnh quán từ điện thoại" />
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Link ảnh quán">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtImage"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilName"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Tên quán">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtName"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Địa chỉ quán">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtAddress"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPostalAddress" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Số điện thoại quán">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtPhone"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="phone" android:maxLength="11" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Mô tả quán">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtDesc"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/swOpen"
+                android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp"
+                android:text="Đang mở cửa nhận đơn" />
+            <!-- Chỉ quản trị sàn thấy -->
+            <LinearLayout android:id="@+id/adminBox" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:visibility="gone">
+                <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/swActive"
+                    android:layout_width="match_parent" android:layout_height="52dp"
+                    android:text="Quán hoạt động trên sàn (tắt = tạm khóa quán)" />
+                <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" android:text="Chủ quán (tài khoản vai trò Chủ cửa hàng)" />
+                <Spinner android:id="@+id/spOwner" android:layout_width="match_parent" android:layout_height="48dp"
+                    android:background="@drawable/bg_card" />
+                <TextView style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" android:textSize="12sp"
+                    android:text="Chưa có tài khoản chủ quán? Vào Quản lý người dùng, thêm tài khoản với vai trò Chủ cửa hàng." />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+    <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="56dp"
+        android:layout_margin="12dp" android:text="Lưu thông tin quán" android:textSize="16sp" />
+</LinearLayout>

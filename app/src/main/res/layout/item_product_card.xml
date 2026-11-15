@@ -15,6 +15,8 @@
     <TextView android:id="@+id/tvName" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="6dp" android:maxLines="2" android:minLines="2"
         android:textColor="@color/ink" android:textSize="14sp" android:textStyle="bold" />
+    <TextView android:id="@+id/tvStore" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:ellipsize="end" android:maxLines="1" android:textSize="12sp" />
     <TextView android:id="@+id/tvPrice" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:textColor="@color/primary" android:textSize="14sp" android:textStyle="bold" />
     <TextView android:id="@+id/tvRating" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
