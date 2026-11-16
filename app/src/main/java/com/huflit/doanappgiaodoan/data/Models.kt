@@ -134,12 +134,16 @@ object Role {
 data class StoreDto(
     val id: Int, val name: String, val address: String, val phone: String, val description: String?,
     val imageUrl: String?, val isOpen: Boolean, val isActive: Boolean, val ownerId: Int?, val ownerName: String?,
-    val ownerEmail: String?, val productCount: Int, val avgRating: Double, val orderCount: Int
+    val ownerEmail: String?, val productCount: Int, val avgRating: Double, val orderCount: Int,
+    val storeCategoryId: Int? = null, val storeCategoryName: String? = null
 )
 data class StoreRequest(
     val name: String, val address: String, val phone: String, val description: String?, val imageUrl: String?,
-    val isOpen: Boolean, val isActive: Boolean, val ownerId: Int?
+    val isOpen: Boolean, val isActive: Boolean, val ownerId: Int?, val storeCategoryId: Int? = null
 )
+// Loại quán (bảng DanhMucQuanAn)
+data class StoreCategoryDto(val id: Int, val name: String, val imageUrl: String?, val storeCount: Int)
+data class StoreCategoryRequest(val name: String, val imageUrl: String?)
 data class StoreDetailDto(val store: StoreDto, val products: List<ProductDto>)
 data class OpenRequest(val isOpen: Boolean)
 

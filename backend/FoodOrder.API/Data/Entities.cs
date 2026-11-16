@@ -15,10 +15,21 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
+// Bảng DanhMucQuanAn: loại quán (Cơm & Bún Phở, Trà sữa, Thức ăn nhanh...)
+public class StoreCategory
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? ImageUrl { get; set; }
+    public List<Store> Stores { get; set; } = new();
+}
+
 // Bảng CuaHang: mỗi quán ăn trên sàn, do 1 chủ quán quản lý
 public class Store
 {
     public int Id { get; set; }
+    public int? StoreCategoryId { get; set; }
+    public StoreCategory? StoreCategory { get; set; }
     public string Name { get; set; } = "";
     public string Address { get; set; } = "";
     public string Phone { get; set; } = "";

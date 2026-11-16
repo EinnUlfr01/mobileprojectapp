@@ -30,7 +30,8 @@ public static class Mapping
 
     public static StoreDto ToDto(this Store s, int productCount, double avgRating, int orderCount) => new(
         s.Id, s.Name, s.Address, s.Phone, s.Description, s.ImageUrl, s.IsOpen, s.IsActive,
-        s.OwnerId, s.Owner?.FullName, s.Owner?.Email, productCount, Math.Round(avgRating, 1), orderCount);
+        s.OwnerId, s.Owner?.FullName, s.Owner?.Email, productCount, Math.Round(avgRating, 1), orderCount,
+        s.StoreCategoryId, s.StoreCategory?.Name);
 
     public static VoucherDto ToDto(this Voucher v) => new(v.Id, v.Code, v.Description, v.Type, v.Value, v.MinOrder,
         v.MaxDiscount, v.UsageLimit, v.UsedCount, v.ExpiresAt, v.IsActive);

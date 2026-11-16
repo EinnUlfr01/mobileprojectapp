@@ -42,6 +42,10 @@
                 <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtDesc"
                     android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" />
             </com.google.android.material.textfield.TextInputLayout>
+            <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:text="Loại quán" />
+            <Spinner android:id="@+id/spStoreCategory" android:layout_width="match_parent" android:layout_height="48dp"
+                android:background="@drawable/bg_card" />
             <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/swOpen"
                 android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp"
                 android:text="Đang mở cửa nhận đơn" />

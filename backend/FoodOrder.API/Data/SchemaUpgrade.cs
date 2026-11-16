@@ -123,6 +123,14 @@ public static class SchemaUpgrade
         UPDATE NguoiDung SET Role = 'Shipper' WHERE Role = 'OrderStaff';
         """,
         """
+        IF OBJECT_ID(N'DanhMucQuanAn', N'U') IS NULL
+        CREATE TABLE DanhMucQuanAn (
+            Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_DanhMucQuanAn PRIMARY KEY,
+            Name nvarchar(200) NOT NULL,
+            ImageUrl nvarchar(500) NULL
+        );
+        """,
+        """
         IF OBJECT_ID(N'CuaHang', N'U') IS NULL
         BEGIN
         CREATE TABLE CuaHang (
@@ -138,6 +146,24 @@ public static class SchemaUpgrade
             CreatedAt datetime2 NOT NULL
         );
         CREATE INDEX IX_CuaHang_OwnerId ON CuaHang(OwnerId);
+        END
+        """,
+        """
+        IF COL_LENGTH('CuaHang', 'StoreCategoryId') IS NULL
+        BEGIN
+            ALTER TABLE CuaHang ADD StoreCategoryId int NULL
+                CONSTRAINT FK_CuaHang_DanhMucQuanAn_StoreCategoryId REFERENCES DanhMucQuanAn(Id) ON DELETE SET NULL;
+            EXEC(N'CREATE INDEX IX_CuaHang_StoreCategoryId ON CuaHang(StoreCategoryId)');
+        END
+        """,
+        // Database từng chạy bản thử nghiệm bảng QuanAn: bỏ cột SanPham.StoreId trỏ sang QuanAn để chuyển sang CuaHang
+        """
+        IF OBJECT_ID(N'FK_SanPham_QuanAn_StoreId', N'F') IS NOT NULL
+        BEGIN
+            ALTER TABLE SanPham DROP CONSTRAINT FK_SanPham_QuanAn_StoreId;
+            IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SanPham_StoreId' AND object_id = OBJECT_ID('SanPham'))
+                DROP INDEX IX_SanPham_StoreId ON SanPham;
+            ALTER TABLE SanPham DROP COLUMN StoreId;
         END
         """,
         // Món cũ chưa thuộc quán nào: tạo 4 quán mẫu rồi chia món theo danh mục

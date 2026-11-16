@@ -81,9 +81,12 @@ public record PaymentStatusDto(string OrderCode, bool IsPaid, string Status);
 
 // ---------- Cửa hàng (sàn nhiều quán) ----------
 public record StoreDto(int Id, string Name, string Address, string Phone, string? Description, string? ImageUrl,
-    bool IsOpen, bool IsActive, int? OwnerId, string? OwnerName, string? OwnerEmail, int ProductCount, double AvgRating, int OrderCount);
+    bool IsOpen, bool IsActive, int? OwnerId, string? OwnerName, string? OwnerEmail, int ProductCount, double AvgRating, int OrderCount,
+    int? StoreCategoryId = null, string? StoreCategoryName = null);
 public record StoreRequest(string Name, string Address, string Phone, string? Description, string? ImageUrl,
-    bool IsOpen, bool IsActive, int? OwnerId);
+    bool IsOpen, bool IsActive, int? OwnerId, int? StoreCategoryId = null);
+public record StoreCategoryDto(int Id, string Name, string? ImageUrl, int StoreCount);
+public record StoreCategoryRequest(string Name, string? ImageUrl);
 public record StoreDetailDto(StoreDto Store, List<ProductDto> Products);
 public record OpenRequest(bool IsOpen);
 

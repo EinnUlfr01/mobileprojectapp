@@ -5,6 +5,7 @@ namespace FoodOrder.API.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<StoreCategory> StoreCategories => Set<StoreCategory>();
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
@@ -29,7 +30,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<User>().Property(x => x.Role).HasMaxLength(20);
         b.Entity<User>().Property(x => x.VehiclePlate).HasMaxLength(20);
 
+        b.Entity<StoreCategory>().ToTable("DanhMucQuanAn");
+        b.Entity<StoreCategory>().Property(x => x.Name).HasMaxLength(200);
+        b.Entity<StoreCategory>().Property(x => x.ImageUrl).HasMaxLength(500);
+
         b.Entity<Store>().ToTable("CuaHang");
+        b.Entity<Store>().HasOne(x => x.StoreCategory).WithMany(c => c.Stores)
+            .HasForeignKey(x => x.StoreCategoryId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<Store>().Property(x => x.Name).HasMaxLength(200);
         b.Entity<Store>().Property(x => x.Address).HasMaxLength(300);
         b.Entity<Store>().Property(x => x.Phone).HasMaxLength(15);

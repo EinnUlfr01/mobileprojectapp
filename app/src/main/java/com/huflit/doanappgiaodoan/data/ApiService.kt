@@ -110,7 +110,13 @@ interface ApiService {
     ): StatsDto
 
     // ---------- Cửa hàng ----------
-    @GET("api/stores") suspend fun stores(@Query("q") q: String? = null): List<StoreDto>
+    @GET("api/stores") suspend fun stores(
+        @Query("q") q: String? = null, @Query("storeCategoryId") storeCategoryId: Int? = null
+    ): List<StoreDto>
+    @GET("api/store-categories") suspend fun storeCategories(): List<StoreCategoryDto>
+    @POST("api/store-categories") suspend fun createStoreCategory(@Body body: StoreCategoryRequest): StoreCategoryDto
+    @PUT("api/store-categories/{id}") suspend fun updateStoreCategory(@Path("id") id: Int, @Body body: StoreCategoryRequest): MessageDto
+    @DELETE("api/store-categories/{id}") suspend fun deleteStoreCategory(@Path("id") id: Int): MessageDto
     @GET("api/stores/{id}") suspend fun store(@Path("id") id: Int): StoreDetailDto
     @GET("api/stores/all") suspend fun allStores(@Query("q") q: String? = null): List<StoreDto>
     @POST("api/stores") suspend fun createStore(@Body body: StoreRequest): StoreDto

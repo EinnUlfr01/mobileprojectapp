@@ -3,11 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+
     <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
         android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+
     <SearchView android:id="@+id/searchView" android:layout_width="match_parent" android:layout_height="52dp"
         android:layout_margin="12dp" android:background="@drawable/bg_card" android:iconifiedByDefault="false"
-        android:queryHint="Tìm món ăn, đồ uống…" />
+        android:queryHint="Tìm quán ăn, món ăn, đồ uống…" />
 
     <!-- Tìm kiếm gần đây + từ khóa phổ biến (hiện khi ô tìm kiếm trống) -->
     <HorizontalScrollView android:id="@+id/suggestBar" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -82,7 +84,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Tìm thấy 0 món" />
+                android:text="Tìm thấy 0 kết quả" />
 
             <Button
                 android:id="@+id/btnClearFilters"
@@ -94,8 +96,48 @@
     </LinearLayout>
 
     <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:gravity="center" android:padding="24dp" android:text="Không tìm thấy món phù hợp" android:visibility="gone" />
-    <!-- ListView: kết quả tìm kiếm -->
+        android:gravity="center" android:padding="24dp" android:text="Không tìm thấy quán ăn hoặc món ăn phù hợp" android:visibility="gone" />
+
+    <!-- Quán ăn tìm thấy -->
+    <TextView
+        android:id="@+id/tvStoresHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp"
+        android:text=" Quán ăn"
+        android:textColor="@color/ink"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvStores"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:visibility="gone" />
+
+    <!-- Món ăn tìm thấy -->
+    <TextView
+        android:id="@+id/tvProductsHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp"
+        android:text="🍔 Món ăn"
+        android:textColor="@color/ink"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- ListView: danh sách món ăn -->
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"

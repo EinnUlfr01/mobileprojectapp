@@ -10,6 +10,7 @@ import com.huflit.doanappgiaodoan.data.ProductDto
 import com.huflit.doanappgiaodoan.data.StoreDto
 import com.huflit.doanappgiaodoan.databinding.ItemCategoryChipBinding
 import com.huflit.doanappgiaodoan.databinding.ItemStoreCardBinding
+import com.huflit.doanappgiaodoan.databinding.ItemStoreRowBinding
 import com.huflit.doanappgiaodoan.databinding.ItemProductCardBinding
 import com.huflit.doanappgiaodoan.databinding.ItemProductRowBinding
 import com.huflit.doanappgiaodoan.util.ImageLoader
@@ -51,10 +52,37 @@ class StoreCardAdapter(
     override fun onBindViewHolder(h: VH, position: Int) {
         val s = items[position]
         h.b.tvName.text = s.name
-        h.b.tvAddress.text = s.address
+        h.b.tvAddress.text = listOfNotNull(s.storeCategoryName, s.address).joinToString(" · ")
         h.b.tvInfo.text = storeInfo(s)
         h.b.tvClosed.visibility = if (s.isOpen) View.GONE else View.VISIBLE
         ImageLoader.load(h.b.img, h.b.imgText, s.imageUrl, s.name)
+        h.b.root.setOnClickListener { onClick(s) }
+    }
+}
+
+// ---------- RecyclerView: dòng quán ăn (kết quả tìm kiếm) ----------
+fun ItemStoreRowBinding.fill(s: StoreDto) {
+    tvName.text = s.name + if (s.isOpen) "" else "  (đang đóng cửa)"
+    tvCategory.text = listOfNotNull(s.storeCategoryName, "${s.productCount} món").joinToString(" · ")
+    tvAddress.text = "📍 ${s.address}"
+    tvRating.text = storeInfo(s)
+    ImageLoader.load(img, imgText, s.imageUrl, s.name)
+}
+
+class StoreRowAdapter(
+    private var items: List<StoreDto> = emptyList(),
+    private val onClick: (StoreDto) -> Unit
+) : RecyclerView.Adapter<StoreRowAdapter.VH>() {
+    class VH(val b: ItemStoreRowBinding) : RecyclerView.ViewHolder(b.root)
+
+    fun submit(list: List<StoreDto>) { items = list; notifyDataSetChanged() }
+    override fun getItemCount() = items.size
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        VH(ItemStoreRowBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+    override fun onBindViewHolder(h: VH, position: Int) {
+        val s = items[position]
+        h.b.fill(s)
         h.b.root.setOnClickListener { onClick(s) }
     }
 }

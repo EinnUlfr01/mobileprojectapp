@@ -16,9 +16,10 @@ public class StoresController(AppDbContext db) : ControllerBase
 {
     // Trang chủ: các quán đang hoạt động
     [HttpGet]
-    public async Task<List<StoreDto>> GetAll(string? q)
+    public async Task<List<StoreDto>> GetAll(string? q, int? storeCategoryId)
     {
-        var query = db.Stores.Include(s => s.Owner).Where(s => s.IsActive);
+        var query = db.Stores.Include(s => s.Owner).Include(s => s.StoreCategory).Where(s => s.IsActive);
+        if (storeCategoryId.HasValue) query = query.Where(s => s.StoreCategoryId == storeCategoryId);
         if (!string.IsNullOrWhiteSpace(q)) query = query.Where(s => s.Name.Contains(q.Trim()) || s.Address.Contains(q.Trim()));
         var list = await query.OrderByDescending(s => s.IsOpen).ThenBy(s => s.Id).ToListAsync();
         return await ToDtos(list);
@@ -28,7 +29,7 @@ public class StoresController(AppDbContext db) : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<StoreDetailDto>> Get(int id)
     {
-        var s = await db.Stores.Include(x => x.Owner).FirstOrDefaultAsync(x => x.Id == id);
+        var s = await db.Stores.Include(x => x.Owner).Include(x => x.StoreCategory).FirstOrDefaultAsync(x => x.Id == id);
         if (s == null || (!s.IsActive && !User.IsInRole(Roles.Admin) && s.OwnerId != User.UserId()))
             return NotFound(new MessageDto("Không tìm thấy quán"));
         var products = await db.Products.Include(p => p.Category).Include(p => p.Store).Include(p => p.Sizes)
@@ -40,7 +41,7 @@ public class StoresController(AppDbContext db) : ControllerBase
     [HttpGet("all"), Authorize(Roles = Roles.Admin)]
     public async Task<List<StoreDto>> All(string? q)
     {
-        var query = db.Stores.Include(s => s.Owner).AsQueryable();
+        var query = db.Stores.Include(s => s.Owner).Include(s => s.StoreCategory).AsQueryable();
         if (!string.IsNullOrWhiteSpace(q)) query = query.Where(s => s.Name.Contains(q.Trim()) || s.Address.Contains(q.Trim()));
         return await ToDtos(await query.OrderBy(s => s.Id).ToListAsync());
     }
@@ -55,6 +56,7 @@ public class StoresController(AppDbContext db) : ControllerBase
         db.Stores.Add(s);
         await db.SaveChangesAsync();
         await db.Entry(s).Reference(x => x.Owner).LoadAsync();
+        await db.Entry(s).Reference(x => x.StoreCategory).LoadAsync();
         return (await ToDtos(new List<Store> { s }))[0];
     }
 
@@ -68,6 +70,7 @@ public class StoresController(AppDbContext db) : ControllerBase
         Apply(s, r, isAdmin: true);
         await db.SaveChangesAsync();
         await db.Entry(s).Reference(x => x.Owner).LoadAsync();
+        await db.Entry(s).Reference(x => x.StoreCategory).LoadAsync();
         return (await ToDtos(new List<Store> { s }))[0];
     }
 
@@ -87,7 +90,7 @@ public class StoresController(AppDbContext db) : ControllerBase
     [HttpGet("mine"), Authorize(Roles = Roles.StoreOwner)]
     public async Task<ActionResult<StoreDto>> Mine()
     {
-        var s = await db.Stores.Include(x => x.Owner).FirstOrDefaultAsync(x => x.OwnerId == User.UserId());
+        var s = await db.Stores.Include(x => x.Owner).Include(x => x.StoreCategory).FirstOrDefaultAsync(x => x.OwnerId == User.UserId());
         if (s == null) return NotFound(new MessageDto("Tài khoản chưa được gán cửa hàng, liên hệ quản trị sàn"));
         return (await ToDtos(new List<Store> { s }))[0];
     }
@@ -95,12 +98,13 @@ public class StoresController(AppDbContext db) : ControllerBase
     [HttpPut("mine"), Authorize(Roles = Roles.StoreOwner)]
     public async Task<ActionResult<StoreDto>> UpdateMine(StoreRequest r)
     {
-        var s = await db.Stores.Include(x => x.Owner).FirstOrDefaultAsync(x => x.OwnerId == User.UserId());
+        var s = await db.Stores.Include(x => x.Owner).Include(x => x.StoreCategory).FirstOrDefaultAsync(x => x.OwnerId == User.UserId());
         if (s == null) return NotFound(new MessageDto("Tài khoản chưa được gán cửa hàng"));
         var err = await Validate(r with { OwnerId = s.OwnerId }, s.Id);
         if (err != null) return BadRequest(new MessageDto(err));
         Apply(s, r, isAdmin: false);
         await db.SaveChangesAsync();
+        await db.Entry(s).Reference(x => x.StoreCategory).LoadAsync();
         return (await ToDtos(new List<Store> { s }))[0];
     }
 
@@ -123,6 +127,7 @@ public class StoresController(AppDbContext db) : ControllerBase
         s.Description = string.IsNullOrWhiteSpace(r.Description) ? null : r.Description.Trim();
         s.ImageUrl = string.IsNullOrWhiteSpace(r.ImageUrl) ? null : r.ImageUrl.Trim();
         s.IsOpen = r.IsOpen;
+        s.StoreCategoryId = r.StoreCategoryId;
         if (isAdmin)
         {
             s.IsActive = r.IsActive;
@@ -136,6 +141,8 @@ public class StoresController(AppDbContext db) : ControllerBase
         if (string.IsNullOrWhiteSpace(r.Address)) return "Vui lòng nhập địa chỉ quán";
         if (string.IsNullOrWhiteSpace(r.Phone) || r.Phone.Trim().Length < 8 || !r.Phone.Trim().All(char.IsDigit))
             return "Số điện thoại quán không hợp lệ";
+        if (r.StoreCategoryId != null && !await db.StoreCategories.AnyAsync(c => c.Id == r.StoreCategoryId))
+            return "Loại quán không tồn tại";
         if (r.OwnerId != null)
         {
             var owner = await db.Users.FindAsync(r.OwnerId);
@@ -161,5 +168,51 @@ public class StoresController(AppDbContext db) : ControllerBase
             var avg = rated.Count == 0 ? 0 : rated.Average();
             return s.ToDto(ps.Count, avg, orderCounts.FirstOrDefault(x => x.StoreId == s.Id)?.Count ?? 0);
         }).ToList();
+    }
+}
+
+// Loại quán (bảng DanhMucQuanAn): ai cũng xem được, quản trị sàn thêm/sửa/xóa
+[ApiController]
+[Route("api/store-categories")]
+public class StoreCategoriesController(AppDbContext db) : ControllerBase
+{
+    [HttpGet]
+    public async Task<List<StoreCategoryDto>> GetAll() =>
+        await db.StoreCategories.OrderBy(c => c.Id)
+            .Select(c => new StoreCategoryDto(c.Id, c.Name, c.ImageUrl, c.Stores.Count(s => s.IsActive)))
+            .ToListAsync();
+
+    [HttpPost, Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<StoreCategoryDto>> Create(StoreCategoryRequest r)
+    {
+        if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên loại quán"));
+        var c = new StoreCategory { Name = r.Name.Trim(), ImageUrl = r.ImageUrl };
+        db.StoreCategories.Add(c);
+        await db.SaveChangesAsync();
+        return new StoreCategoryDto(c.Id, c.Name, c.ImageUrl, 0);
+    }
+
+    [HttpPut("{id:int}"), Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<MessageDto>> Update(int id, StoreCategoryRequest r)
+    {
+        var c = await db.StoreCategories.FindAsync(id);
+        if (c == null) return NotFound(new MessageDto("Không tìm thấy loại quán"));
+        if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên loại quán"));
+        c.Name = r.Name.Trim();
+        c.ImageUrl = r.ImageUrl;
+        await db.SaveChangesAsync();
+        return new MessageDto("Đã cập nhật");
+    }
+
+    [HttpDelete("{id:int}"), Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<MessageDto>> Delete(int id)
+    {
+        var c = await db.StoreCategories.FindAsync(id);
+        if (c == null) return NotFound(new MessageDto("Không tìm thấy loại quán"));
+        if (await db.Stores.AnyAsync(s => s.StoreCategoryId == id))
+            return BadRequest(new MessageDto("Loại quán còn quán, hãy chuyển quán sang loại khác trước"));
+        db.StoreCategories.Remove(c);
+        await db.SaveChangesAsync();
+        return new MessageDto("Đã xóa");
     }
 }

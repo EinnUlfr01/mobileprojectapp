@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import com.huflit.doanappgiaodoan.data.Role
 import com.huflit.doanappgiaodoan.data.Session
+import com.huflit.doanappgiaodoan.data.StoreCategoryDto
 import com.huflit.doanappgiaodoan.data.StoreDto
 import com.huflit.doanappgiaodoan.data.StoreRequest
 import com.huflit.doanappgiaodoan.data.UserDto
@@ -28,6 +29,8 @@ class StoreEditActivity : AppCompatActivity() {
     private var storeId = 0
     private var owners: List<UserDto> = emptyList()
     private var pendingOwnerId: Int? = null
+    private var storeCats: List<StoreCategoryDto> = emptyList()
+    private var pendingCatId: Int? = null
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
@@ -57,6 +60,14 @@ class StoreEditActivity : AppCompatActivity() {
         b.btnSave.setOnClickListener { save() }
         preview()
 
+        // Loại quán (bảng DanhMucQuanAn)
+        api({ storeCategories() }, onError = {}) { list ->
+            storeCats = list
+            b.spStoreCategory.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+                listOf("Chưa phân loại") + list.map { it.name })
+            selectCategory()
+        }
+
         if (isAdmin) {
             // Danh sách tài khoản chủ quán để gán
             api({ users(role = Role.STORE_OWNER) }) { list ->
@@ -84,6 +95,14 @@ class StoreEditActivity : AppCompatActivity() {
         b.swActive.isChecked = s.isActive
         pendingOwnerId = s.ownerId
         selectOwner()
+        pendingCatId = s.storeCategoryId
+        selectCategory()
+    }
+
+    private fun selectCategory() {
+        val id = pendingCatId ?: return
+        val idx = storeCats.indexOfFirst { it.id == id }
+        if (idx >= 0) b.spStoreCategory.setSelection(idx + 1)
     }
 
     private fun selectOwner() {
@@ -109,7 +128,8 @@ class StoreEditActivity : AppCompatActivity() {
             imageUrl = b.edtImage.text.toString().trim().ifEmpty { null },
             isOpen = b.swOpen.isChecked,
             isActive = b.swActive.isChecked,
-            ownerId = if (isAdmin && ownerPos > 0) owners[ownerPos - 1].id else null
+            ownerId = if (isAdmin && ownerPos > 0) owners[ownerPos - 1].id else null,
+            storeCategoryId = b.spStoreCategory.selectedItemPosition.let { if (it > 0) storeCats.getOrNull(it - 1)?.id else pendingCatId }
         )
         b.btnSave.isEnabled = false
         val onErr: (String) -> Unit = { b.btnSave.isEnabled = true; toast(it) }

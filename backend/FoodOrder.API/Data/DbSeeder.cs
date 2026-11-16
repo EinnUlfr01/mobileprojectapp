@@ -167,14 +167,36 @@ public static class DbSeeder
     public static readonly string CategoryStoreCaseSql = string.Join(" ", SampleStores.SelectMany(s =>
         s.Categories.Select(c => $"WHEN N''{c}'' THEN N''{s.Name}''"))) + $" ELSE N''{SampleStores[0].Name}''";
 
+    // Loại quán và quán mẫu nằm loại nào
+    private static readonly (string Name, string[] Stores)[] SampleStoreCategories =
+    {
+        ("Cơm & Bún Phở", new[] { "Cơm Tấm Sài Gòn", "Phở Bò Hà Nội" }),
+        ("Trà Sữa & Đồ Uống", new[] { "Trà Sữa Nhà Làm" }),
+        ("Thức Ăn Nhanh", new[] { "Gà Rán Chicken Plus" }),
+        ("Tráng Miệng", Array.Empty<string>())
+    };
+
     private static async Task<List<Store>> EnsureStoresAsync(AppDbContext db)
     {
+        if (!await db.StoreCategories.AnyAsync())
+        {
+            foreach (var c in SampleStoreCategories) db.StoreCategories.Add(new StoreCategory { Name = c.Name });
+            await db.SaveChangesAsync();
+        }
+        var cats = await db.StoreCategories.ToListAsync();
+        int? CatOf(string storeName) =>
+            cats.FirstOrDefault(c => SampleStoreCategories.Any(sc => sc.Name == c.Name && sc.Stores.Contains(storeName)))?.Id;
+
         if (!await db.Stores.AnyAsync())
         {
             foreach (var s in SampleStores)
-                db.Stores.Add(new Store { Name = s.Name, Address = s.Address, Phone = s.Phone, Description = s.Desc });
+                db.Stores.Add(new Store { Name = s.Name, Address = s.Address, Phone = s.Phone, Description = s.Desc, StoreCategoryId = CatOf(s.Name) });
             await db.SaveChangesAsync();
         }
+        // Quán chưa có loại (database cũ) thì gán theo danh sách mẫu
+        foreach (var s in await db.Stores.Where(s => s.StoreCategoryId == null).ToListAsync())
+            s.StoreCategoryId = CatOf(s.Name);
+        await db.SaveChangesAsync();
         return await db.Stores.OrderBy(s => s.Id).ToListAsync();
     }
 
