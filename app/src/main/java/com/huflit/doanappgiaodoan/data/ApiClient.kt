@@ -6,9 +6,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    // Dùng "adb reverse tcp:5090 tcp:5090" để nối cổng 5090 của máy ảo/điện thoại về máy tính,
-    // nên app chỉ cần gọi 127.0.0.1 (chạy lại lệnh adb reverse mỗi lần khởi động máy ảo).
-    // Cách khác: máy ảo dùng "http://10.0.2.2:5090/", điện thoại thật dùng IP Wi-Fi của máy tính.
+    // App gọi 127.0.0.1:5090; cổng này được nối về API trên máy tính bằng "adb reverse tcp:5090 tcp:5090".
+    // Mỗi lần bấm Run trong Android Studio, Gradle tự chạy lệnh này (task adbReverse trong app/build.gradle.kts).
     const val BASE_URL = "http://127.0.0.1:5090/"
 
     private val http = OkHttpClient.Builder()
