@@ -1,32 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
-    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
-        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
-    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-            <FrameLayout android:layout_width="match_parent" android:layout_height="140dp">
-                <TextView android:id="@+id/imgText" style="@style/Placeholder" android:textSize="48sp"
-                    android:layout_width="match_parent" android:layout_height="match_parent" />
-                <ImageView android:id="@+id/img" android:layout_width="match_parent" android:layout_height="match_parent"
-                    android:contentDescription="Ảnh món" android:scaleType="centerCrop" android:visibility="gone" />
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="140dp">
+                <TextView
+                    android:id="@+id/imgText" style="@style/Placeholder" android:textSize="48sp"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+                <ImageView
+                    android:id="@+id/img"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Ảnh món"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
             </FrameLayout>
-            <Button android:id="@+id/btnPickImage" style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp"
+            <Button
+                android:id="@+id/btnPickImage"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
                 android:text="Chọn ảnh từ điện thoại" />
-    <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilImage"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilImage"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="8dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Link ảnh món (dán URL ảnh)">
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtImage"
-            android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Link ảnh món (dán URL ảnh)">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtImage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textUri" />
     </com.google.android.material.textfield.TextInputLayout>
-    <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilName"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilName"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="8dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Tên món">
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtName"
-            android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tên món">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
     <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilDesc"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox" android:layout_marginTop="8dp"
