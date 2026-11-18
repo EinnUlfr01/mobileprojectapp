@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.huflit.doanappgiaodoan.MainActivity
 import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.databinding.ActivitySplashBinding
-import com.huflit.doanappgiaodoan.ui.admin.AdminDashboardActivity
+import com.huflit.doanappgiaodoan.ui.Nav
 
 // Màn hình chào: chờ 2 giây rồi kiểm tra đăng nhập
 class SplashActivity : AppCompatActivity() {
@@ -18,8 +18,8 @@ class SplashActivity : AppCompatActivity() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             val next = when {
-                Session.isStaff -> AdminDashboardActivity::class.java
-                Session.isLoggedIn || Session.isGuest -> MainActivity::class.java
+                Session.isLoggedIn -> Nav.homeClass() // admin sàn / chủ quán / shipper / khách hàng
+                Session.isGuest -> MainActivity::class.java
                 else -> LoginActivity::class.java
             }
             startActivity(Intent(this, next))

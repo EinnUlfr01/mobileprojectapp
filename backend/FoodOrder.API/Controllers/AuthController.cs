@@ -40,7 +40,10 @@ public class AuthController(AppDbContext db, IPasswordHasher<User> hasher, Token
         var u = await db.Users.FirstOrDefaultAsync(x => x.Email == key || x.Phone == key);
         if (u == null || hasher.VerifyHashedPassword(u, u.PasswordHash, r.Password ?? "") == PasswordVerificationResult.Failed)
             return Unauthorized(new MessageDto("Sai tài khoản hoặc mật khẩu"));
-        return new LoginResponse(tokens.Create(u), u.ToDto());
+        if (u.IsLocked) return StatusCode(403, new MessageDto("Tài khoản đã bị khóa, liên hệ quản trị sàn"));
+        // Chủ quán: kèm quán đang quản lý
+        var store = u.Role == Roles.StoreOwner ? await db.Stores.FirstOrDefaultAsync(s => s.OwnerId == u.Id) : null;
+        return new LoginResponse(tokens.Create(u), u.ToDto(store));
     }
 }
 
@@ -54,7 +57,9 @@ public class MeController(AppDbContext db, IPasswordHasher<User> hasher) : Contr
     public async Task<ActionResult<UserDto>> Get()
     {
         var u = await db.Users.FindAsync(User.UserId());
-        return u == null ? NotFound() : u.ToDto();
+        if (u == null) return NotFound();
+        var store = u.Role == Roles.StoreOwner ? await db.Stores.FirstOrDefaultAsync(s => s.OwnerId == u.Id) : null;
+        return u.ToDto(store);
     }
 
     [HttpPut]

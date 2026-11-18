@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FoodOrder.API.Controllers;
 
-// Mã giảm giá: khách xem/kiểm tra mã, Quản trị viên và Quản lý thực đơn tạo/sửa/xóa
+// Mã giảm giá: khách xem/kiểm tra mã, quản trị sàn tạo/sửa/xóa (mã dùng cho mọi quán)
 [ApiController]
 [Route("api/vouchers")]
 public class VouchersController(AppDbContext db) : ControllerBase
@@ -53,14 +53,14 @@ public class VouchersController(AppDbContext db) : ControllerBase
     }
 
     // ---------- Quản lý (ManageVouchersActivity) ----------
-    [HttpGet("all"), Authorize(Roles = Roles.MenuManagers)]
+    [HttpGet("all"), Authorize(Roles = Roles.Admin)]
     public async Task<List<VoucherDto>> All()
     {
         var list = await db.Vouchers.OrderByDescending(v => v.Id).ToListAsync();
         return list.Select(v => v.ToDto()).ToList();
     }
 
-    [HttpPost, Authorize(Roles = Roles.MenuManagers)]
+    [HttpPost, Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<VoucherDto>> Create(VoucherRequest r)
     {
         var err = await Validate(r, null);
@@ -72,7 +72,7 @@ public class VouchersController(AppDbContext db) : ControllerBase
         return v.ToDto();
     }
 
-    [HttpPut("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
+    [HttpPut("{id:int}"), Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<VoucherDto>> Update(int id, VoucherRequest r)
     {
         var v = await db.Vouchers.FindAsync(id);
@@ -84,7 +84,7 @@ public class VouchersController(AppDbContext db) : ControllerBase
         return v.ToDto();
     }
 
-    [HttpDelete("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
+    [HttpDelete("{id:int}"), Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<MessageDto>> Delete(int id)
     {
         var v = await db.Vouchers.FindAsync(id);

@@ -29,6 +29,27 @@ class LoginActivity : AppCompatActivity() {
         }
 
         b.tvRegister.setOnClickListener { startActivity(Intent(this, RegisterActivity::class.java)) }
+        b.tvDemo.setOnClickListener { pickDemoAccount() }
+    }
+
+    // Chọn nhanh tài khoản mẫu khi demo (dữ liệu mẫu do API tạo sẵn)
+    private fun pickDemoAccount() {
+        val accounts = listOf(
+            Triple("Khách hàng", "user@gmail.com", "123456"),
+            Triple("Quản trị sàn", "admin@gmail.com", "Admin@123"),
+            Triple("Chủ quán Cơm Tấm Sài Gòn", "quan1@gmail.com", "Quan@123"),
+            Triple("Chủ quán Phở Bò Hà Nội", "quan2@gmail.com", "Quan@123"),
+            Triple("Shipper 1", "shipper1@gmail.com", "Shipper@123"),
+            Triple("Shipper 2", "shipper2@gmail.com", "Shipper@123"),
+        )
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Tài khoản demo")
+            .setItems(accounts.map { "${it.first}\n${it.second}" }.toTypedArray()) { _, i ->
+                b.edtAccount.setText(accounts[i].second)
+                b.edtPassword.setText(accounts[i].third)
+                doLogin()
+            }
+            .show()
     }
 
     private fun doLogin() {

@@ -15,10 +15,10 @@ public static class DbSeeder
         await db.Database.EnsureCreatedAsync();
         await SchemaUpgrade.RunAsync(db);     // thêm bảng/cột mới cho database cũ
         await SeedVouchersAsync(db);
-        await EnsureStoresAsync(db);
         if (await db.Users.AnyAsync())
         {
-            await EnsureStaffAsync(db, hasher);
+            await EnsureStoresAsync(db);
+            await EnsureAccountsAsync(db, hasher);
             await FillImagesAsync(sp, db);
             return;
         }
@@ -29,7 +29,7 @@ public static class DbSeeder
         user.PasswordHash = hasher.HashPassword(user, "123456");
         db.Users.AddRange(admin, user);
         await db.SaveChangesAsync();
-        await EnsureStaffAsync(db, hasher);
+        var stores = await EnsureStoresAsync(db);
 
         var data = new (string Cat, (string Name, string Desc, bool IsNew, decimal Price)[] Items)[]
         {
@@ -59,11 +59,12 @@ public static class DbSeeder
         {
             var cat = new Category { Name = catName };
             db.Categories.Add(cat);
+            var store = stores.First(x => x.Name == StoreOfCategory(catName));
             foreach (var (name, desc, isNew, price) in items)
             {
                 var p = new Product
                 {
-                    Category = cat, Name = name, Description = desc, IsNew = isNew,
+                    Category = cat, Store = store, Name = name, Description = desc, IsNew = isNew,
                     Sizes = new List<ProductSize>
                     {
                         new() { Size = "S", Price = price - 5000 },
@@ -76,8 +77,10 @@ public static class DbSeeder
             }
         }
         await db.SaveChangesAsync();
+        await EnsureAccountsAsync(db, hasher);
+        var shipper = await db.Users.FirstAsync(u => u.Role == Roles.Shipper);
 
-        // Vài đơn mẫu để màn thống kê có số liệu
+        // Vài đơn mẫu để màn thống kê có số liệu (mỗi đơn chỉ gồm món của 1 quán)
         var rnd = new Random(10);
         for (var i = 1; i <= 12; i++)
         {
@@ -90,11 +93,14 @@ public static class DbSeeder
                 Phone = guest ? "09" + rnd.Next(10000000, 99999999) : user.Phone,
                 Address = guest ? "Q.3, TP.HCM" : user.DefaultAddress!,
                 PaymentMethod = i % 3 == 0 ? "VNPay" : "Tiền mặt",
-                Status = i <= 8 ? OrderStatus.Done : (i <= 10 ? OrderStatus.Shipping : OrderStatus.Pending),
+                Status = i <= 8 ? OrderStatus.Done : i <= 10 ? OrderStatus.Shipping : i == 11 ? OrderStatus.Preparing : OrderStatus.Pending,
                 CreatedAt = DateTime.UtcNow.AddDays(-rnd.Next(0, 60)),
                 ShippingFee = 15000
             };
-            foreach (var p in products.OrderBy(_ => rnd.Next()).Take(rnd.Next(1, 4)))
+            var orderStore = stores[rnd.Next(stores.Count)];
+            o.StoreId = orderStore.Id;
+            if (o.Status is OrderStatus.Shipping or OrderStatus.Done) o.ShipperId = shipper.Id;
+            foreach (var p in products.Where(x => x.StoreId == orderStore.Id).OrderBy(_ => rnd.Next()).Take(rnd.Next(1, 4)))
             {
                 var size = p.Sizes[1];
                 var qty = rnd.Next(1, 3);
@@ -106,10 +112,14 @@ public static class DbSeeder
             o.IsPaid = o.PaymentMethod != "Tiền mặt" || o.Status == OrderStatus.Done;
             // Lịch sử trạng thái mẫu cho dòng thời gian theo dõi đơn
             o.History.Add(new OrderStatusLog { Status = OrderStatus.Pending, Note = "Đặt hàng thành công", ChangedBy = o.ReceiverName, CreatedAt = o.CreatedAt });
+            if (o.Status is OrderStatus.Preparing or OrderStatus.Shipping or OrderStatus.Done)
+                o.History.Add(new OrderStatusLog { Status = OrderStatus.Preparing, Note = "Quán đã nhận đơn", ChangedBy = orderStore.Name, CreatedAt = o.CreatedAt.AddMinutes(3) });
             if (o.Status is OrderStatus.Shipping or OrderStatus.Done)
-                o.History.Add(new OrderStatusLog { Status = OrderStatus.Shipping, ChangedBy = "Quản trị viên", CreatedAt = o.CreatedAt.AddMinutes(15) });
+            {
+                o.History.Add(new OrderStatusLog { Status = OrderStatus.Shipping, Note = "Shipper đã lấy món", ChangedBy = shipper.FullName, CreatedAt = o.CreatedAt.AddMinutes(15) });
+            }
             if (o.Status == OrderStatus.Done)
-                o.History.Add(new OrderStatusLog { Status = OrderStatus.Done, ChangedBy = "Quản trị viên", CreatedAt = o.CreatedAt.AddMinutes(40) });
+                o.History.Add(new OrderStatusLog { Status = OrderStatus.Done, Note = "Đã giao cho khách", ChangedBy = shipper.FullName, CreatedAt = o.CreatedAt.AddMinutes(40) });
             db.Orders.Add(o);
         }
         await db.SaveChangesAsync();
@@ -137,60 +147,92 @@ public static class DbSeeder
         await db.SaveChangesAsync();
     }
 
-    // Tài khoản mẫu cho 2 vai trò quản trị phụ (thêm vào cả database đã có sẵn)
-    private static async Task EnsureStaffAsync(AppDbContext db, IPasswordHasher<User> hasher)
+    // ---------- Quán mẫu của sàn ----------
+    // (Tên, Địa chỉ, SĐT, Mô tả, Các danh mục món của quán)
+    private static readonly (string Name, string Address, string Phone, string Desc, string[] Categories)[] SampleStores =
     {
-        var samples = new[]
-        {
-            (Name: "Quản lý thực đơn", Email: "menu@gmail.com", Phone: "0900000001", Role: Roles.MenuManager, Pass: "Menu@123"),
-            (Name: "Nhân viên đơn hàng", Email: "donhang@gmail.com", Phone: "0900000002", Role: Roles.OrderStaff, Pass: "Donhang@123")
-        };
-        foreach (var s in samples)
-        {
-            if (await db.Users.AnyAsync(u => u.Email == s.Email || u.Phone == s.Phone)) continue;
-            var u = new User { FullName = s.Name, Email = s.Email, Phone = s.Phone, Role = s.Role };
-            u.PasswordHash = hasher.HashPassword(u, s.Pass);
-            db.Users.Add(u);
-        }
-        await db.SaveChangesAsync();
-    }
+        ("Cơm Tấm Sài Gòn", "45 Nguyễn Trãi, Q.5, TP.HCM", "0281234501", "Cơm tấm sườn nướng than hồng, mở cửa 6h - 21h", new[] { "Cơm" }),
+        ("Phở Bò Hà Nội", "120 Sư Vạn Hạnh, Q.10, TP.HCM", "0281234502", "Phở bò, bún bò nấu theo vị Bắc", new[] { "Bún/Phở" }),
+        ("Trà Sữa Nhà Làm", "88 Ba Tháng Hai, Q.10, TP.HCM", "0281234503", "Trà sữa, trà trái cây và chè tráng miệng", new[] { "Trà sữa", "Tráng miệng" }),
+        ("Gà Rán Chicken Plus", "15 Lý Thường Kiệt, Q.10, TP.HCM", "0281234504", "Gà rán, burger, khoai tây chiên", new[] { "Ăn nhanh" })
+    };
 
-    // Tạo danh mục quán ăn & quán ăn mẫu
-    private static async Task EnsureStoresAsync(AppDbContext db)
+    public static string StoreOfCategory(string category) =>
+        SampleStores.FirstOrDefault(s => s.Categories.Contains(category)).Name ?? SampleStores[0].Name;
+
+    // Dùng trong SchemaUpgrade để chuyển database cũ (chỉ 1 cửa hàng) sang nhiều quán
+    public static readonly string StoresSql = string.Join(",\n", SampleStores.Select(s =>
+        $"(N'{s.Name}', N'{s.Address}', '{s.Phone}', N'{s.Desc}', NULL, NULL, 1, 1, SYSUTCDATETIME())"));
+
+    public static readonly string CategoryStoreCaseSql = string.Join(" ", SampleStores.SelectMany(s =>
+        s.Categories.Select(c => $"WHEN N''{c}'' THEN N''{s.Name}''"))) + $" ELSE N''{SampleStores[0].Name}''";
+
+    // Loại quán và quán mẫu nằm loại nào
+    private static readonly (string Name, string[] Stores)[] SampleStoreCategories =
+    {
+        ("Cơm & Bún Phở", new[] { "Cơm Tấm Sài Gòn", "Phở Bò Hà Nội" }),
+        ("Trà Sữa & Đồ Uống", new[] { "Trà Sữa Nhà Làm" }),
+        ("Thức Ăn Nhanh", new[] { "Gà Rán Chicken Plus" }),
+        ("Tráng Miệng", Array.Empty<string>())
+    };
+
+    private static async Task<List<Store>> EnsureStoresAsync(AppDbContext db)
     {
         if (!await db.StoreCategories.AnyAsync())
         {
-            var cat1 = new StoreCategory { Name = "Cơm & Bún Phở" };
-            var cat2 = new StoreCategory { Name = "Trà Sữa & Đồ Uống" };
-            var cat3 = new StoreCategory { Name = "Thức Ăn Nhanh" };
-            var cat4 = new StoreCategory { Name = "Tráng Miệng" };
-            db.StoreCategories.AddRange(cat1, cat2, cat3, cat4);
-            await db.SaveChangesAsync();
-
-            var store1 = new Store { StoreCategoryId = cat1.Id, Name = "Quán Cơm Tấm Đêm", Description = "Chuyên cơm tấm sườn nướng, cơm gà xối mỡ", Address = "123 Nguyễn Trãi, Q.5", Phone = "0901234567", Rating = 4.8 };
-            var store2 = new Store { StoreCategoryId = cat1.Id, Name = "Phở Bò Gia Truyền 1979", Description = "Nước dùng hầm xương đậm đà, chuẩn vị", Address = "45 Lê Lai, Q.1", Phone = "0909876543", Rating = 4.9 };
-            var store3 = new Store { StoreCategoryId = cat2.Id, Name = "Trà Sữa Gong Cha", Description = "Trà sữa vị chuẩn, trân châu dai ngon", Address = "88 Sư Vạn Hạnh, Q.10", Phone = "0908888999", Rating = 4.7 };
-            var store4 = new Store { StoreCategoryId = cat3.Id, Name = "KFC Fast Food", Description = "Gà rán giòn rụm, hamburger mọng nước", Address = "100 Ba Tháng Hai, Q.10", Phone = "0903333444", Rating = 4.6 };
-            var store5 = new Store { StoreCategoryId = cat4.Id, Name = "Tiệm Chè & Flan Bà Ba", Description = "Tráng miệng thanh mát, ngọt dịu", Address = "22 Trần Hưng Đạo, Q.1", Phone = "0905555666", Rating = 4.5 };
-            db.Stores.AddRange(store1, store2, store3, store4, store5);
+            foreach (var c in SampleStoreCategories) db.StoreCategories.Add(new StoreCategory { Name = c.Name });
             await db.SaveChangesAsync();
         }
+        var cats = await db.StoreCategories.ToListAsync();
+        int? CatOf(string storeName) =>
+            cats.FirstOrDefault(c => SampleStoreCategories.Any(sc => sc.Name == c.Name && sc.Stores.Contains(storeName)))?.Id;
 
-        var stores = await db.Stores.ToListAsync();
-        if (stores.Count > 0)
+        if (!await db.Stores.AnyAsync())
         {
-            var defaultStore = stores.First();
-            var unassigned = await db.Products.Where(p => p.StoreId == null).ToListAsync();
-            foreach (var p in unassigned)
-            {
-                if (p.Name.Contains("Cơm")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Cơm"))?.Id ?? defaultStore.Id;
-                else if (p.Name.Contains("Phở") || p.Name.Contains("Bún")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Phở"))?.Id ?? defaultStore.Id;
-                else if (p.Name.Contains("Trà")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Gong"))?.Id ?? defaultStore.Id;
-                else if (p.Name.Contains("Gà") || p.Name.Contains("Hamburger") || p.Name.Contains("Khoai")) p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("KFC"))?.Id ?? defaultStore.Id;
-                else p.StoreId = stores.FirstOrDefault(s => s.Name.Contains("Chè"))?.Id ?? defaultStore.Id;
-            }
+            foreach (var s in SampleStores)
+                db.Stores.Add(new Store { Name = s.Name, Address = s.Address, Phone = s.Phone, Description = s.Desc, StoreCategoryId = CatOf(s.Name) });
             await db.SaveChangesAsync();
         }
+        // Quán chưa có loại (database cũ) thì gán theo danh sách mẫu
+        foreach (var s in await db.Stores.Where(s => s.StoreCategoryId == null).ToListAsync())
+            s.StoreCategoryId = CatOf(s.Name);
+        await db.SaveChangesAsync();
+        return await db.Stores.OrderBy(s => s.Id).ToListAsync();
+    }
+
+    // Tài khoản mẫu: mỗi quán 1 chủ quán (quan1..quan4@gmail.com) và 2 shipper (thêm vào cả database đã có sẵn)
+    private static async Task EnsureAccountsAsync(AppDbContext db, IPasswordHasher<User> hasher)
+    {
+        var stores = await db.Stores.OrderBy(s => s.Id).ToListAsync();
+        for (var i = 0; i < stores.Count && i < SampleStores.Length; i++)
+        {
+            var store = stores[i];
+            if (store.OwnerId != null) continue;
+            var email = $"quan{i + 1}@gmail.com";
+            var owner = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (owner == null)
+            {
+                owner = new User { FullName = "Chủ quán " + store.Name, Email = email, Phone = $"09000000{11 + i}", Role = Roles.StoreOwner };
+                owner.PasswordHash = hasher.HashPassword(owner, "Quan@123");
+                db.Users.Add(owner);
+                await db.SaveChangesAsync();
+            }
+            store.OwnerId = owner.Id;
+        }
+
+        var shippers = new[]
+        {
+            (Name: "Trần Văn Bình", Email: "shipper1@gmail.com", Phone: "0900000021", Plate: "59X1-123.45"),
+            (Name: "Lê Thị Cúc", Email: "shipper2@gmail.com", Phone: "0900000022", Plate: "59X2-678.90")
+        };
+        foreach (var s in shippers)
+        {
+            if (await db.Users.AnyAsync(u => u.Email == s.Email || u.Phone == s.Phone)) continue;
+            var u = new User { FullName = s.Name, Email = s.Email, Phone = s.Phone, Role = Roles.Shipper, VehiclePlate = s.Plate };
+            u.PasswordHash = hasher.HashPassword(u, "Shipper@123");
+            db.Users.Add(u);
+        }
+        await db.SaveChangesAsync();
     }
 
     // Gắn ảnh trong wwwroot/images cho món/danh mục chưa có ảnh.

@@ -32,6 +32,7 @@ data class CartLine(
 class CartActivity : AppCompatActivity() {
     private lateinit var b: ActivityCartBinding
     private lateinit var adapter: CartAdapter
+    private var storeName: String? = null   // mỗi giỏ chỉ có món của 1 quán
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,8 +53,12 @@ class CartActivity : AppCompatActivity() {
     }
 
     private fun load() {
-        if (Session.isLoggedIn) api({ cart() }) { show(fromServer(it)) }
-        else show(GuestCart.items().map { CartLine(0, it.productId, it.productName, it.imageUrl, it.size, it.quantity, it.unitPrice) })
+        if (Session.isLoggedIn) api({ cart() }) { storeName = it.storeName; show(fromServer(it)) }
+        else {
+            val items = GuestCart.items()
+            storeName = items.firstOrNull()?.storeName
+            show(items.map { CartLine(0, it.productId, it.productName, it.imageUrl, it.size, it.quantity, it.unitPrice) })
+        }
     }
 
     private fun fromServer(c: CartDto) =
@@ -61,8 +66,8 @@ class CartActivity : AppCompatActivity() {
 
     private fun changeQty(line: CartLine, qty: Int) {
         if (Session.isLoggedIn) {
-            if (qty <= 0) api({ deleteCart(line.cartId) }) { show(fromServer(it)) }
-            else api({ updateCart(line.cartId, UpdateCartRequest(qty)) }) { show(fromServer(it)) }
+            if (qty <= 0) api({ deleteCart(line.cartId) }) { storeName = it.storeName; show(fromServer(it)) }
+            else api({ updateCart(line.cartId, UpdateCartRequest(qty)) }) { storeName = it.storeName; show(fromServer(it)) }
         } else {
             GuestCart.setQuantity(line.productId, line.size, qty)
             load()
@@ -76,7 +81,7 @@ class CartActivity : AppCompatActivity() {
         b.emptyView.visibility = if (empty) View.VISIBLE else View.GONE
         b.rvCart.visibility = if (empty) View.GONE else View.VISIBLE
         b.summary.visibility = if (empty) View.GONE else View.VISIBLE
-        b.tvStats.text = "${lines.size} món · Tổng số lượng ${lines.sumOf { it.quantity }}"
+        b.tvStats.text = (storeName?.let { "🏪 $it\n" } ?: "") + "${lines.size} món · Tổng số lượng ${lines.sumOf { it.quantity }}"
         b.tvSubtotal.text = lines.sumOf { it.lineTotal }.toMoney()
     }
 }

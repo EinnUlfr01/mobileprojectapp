@@ -17,6 +17,10 @@
                 android:orientation="vertical" android:padding="16dp">
                 <TextView android:id="@+id/tvName" android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:textColor="@color/ink" android:textSize="22sp" android:textStyle="bold" />
+                <!-- Quán bán món này: bấm để xem cả quán -->
+                <TextView android:id="@+id/tvStore" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" android:minHeight="36dp" android:gravity="center_vertical"
+                    android:textColor="@color/primary" android:textSize="14sp" android:textStyle="bold" />
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="4dp">
                     <RatingBar android:id="@+id/ratingBar" style="?android:attr/ratingBarStyleSmall"

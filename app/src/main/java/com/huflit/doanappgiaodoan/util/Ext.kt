@@ -159,3 +159,36 @@ object ImageLoader {
         placeholder.visibility = View.GONE
     }
 }
+
+// ---------- Hộp thoại thao tác ----------
+// AlertDialog không hiện cùng lúc message và danh sách, nên tự dựng: dòng thông tin + các nút thao tác bên dưới.
+// actions: (nhãn nút, việc cần làm). Nút đầu tiên in đậm khi boldFirst = true.
+fun AppCompatActivity.showActionSheet(title: String, info: String?, actions: List<Pair<String, () -> Unit>>, boldFirst: Boolean = false) {
+    val d = resources.displayMetrics.density
+    val pad = (16 * d).toInt()
+    val box = android.widget.LinearLayout(this).apply {
+        orientation = android.widget.LinearLayout.VERTICAL
+        setPadding(pad + pad / 2, pad / 2, pad + pad / 2, 0)
+    }
+    if (!info.isNullOrBlank()) box.addView(TextView(this).apply {
+        text = info
+        textSize = 14f
+        setTextColor(getColor(com.huflit.doanappgiaodoan.R.color.ink))
+        setPadding(0, 0, 0, pad / 2)
+    })
+    val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setTitle(title)
+        .setView(android.widget.ScrollView(this).apply { addView(box) })
+        .setNegativeButton("Đóng", null).create()
+    actions.forEachIndexed { i, (label, action) ->
+        box.addView(TextView(this).apply {
+            text = label
+            textSize = 16f
+            if (boldFirst && i == 0) setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(getColor(com.huflit.doanappgiaodoan.R.color.primary))
+            minHeight = (48 * d).toInt()
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setOnClickListener { dialog.dismiss(); action() }
+        })
+    }
+    dialog.show()
+}

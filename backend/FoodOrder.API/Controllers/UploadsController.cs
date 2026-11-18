@@ -8,7 +8,7 @@ namespace FoodOrder.API.Controllers;
 // Upload ảnh món / danh mục từ điện thoại. Ảnh lưu ở wwwroot/uploads, trả về đường dẫn "uploads/xxx.jpg"
 [ApiController]
 [Route("api/uploads")]
-[Authorize(Roles = Roles.MenuManagers)]
+[Authorize(Roles = Roles.AdminOrOwner)]
 public class UploadsController(IWebHostEnvironment env) : ControllerBase
 {
     private static readonly string[] AllowedExt = { ".jpg", ".jpeg", ".png", ".webp" };

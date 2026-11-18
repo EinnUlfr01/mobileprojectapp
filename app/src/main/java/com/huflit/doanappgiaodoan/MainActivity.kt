@@ -16,6 +16,7 @@ import com.huflit.doanappgiaodoan.ui.CategoryChipAdapter
 import com.huflit.doanappgiaodoan.ui.Nav
 import com.huflit.doanappgiaodoan.ui.ProductCardAdapter
 import com.huflit.doanappgiaodoan.ui.ProductRowAdapter
+import com.huflit.doanappgiaodoan.ui.StoreCardAdapter
 import com.huflit.doanappgiaodoan.ui.auth.LoginActivity
 import com.huflit.doanappgiaodoan.ui.auth.RegisterActivity
 import com.huflit.doanappgiaodoan.ui.user.CartActivity
@@ -30,6 +31,7 @@ import com.huflit.doanappgiaodoan.util.api
 // Trang chủ: dùng chung cho user và khách vãng lai (kiểm tra Session.isLoggedIn)
 class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
+    private val storeAdapter = StoreCardAdapter { Nav.store(this, it.id) }
     private val categoryAdapter = CategoryChipAdapter { Nav.category(this, it.id, it.name) }
     private val bestAdapter = ProductCardAdapter { Nav.product(this, it.id) }
     private val newAdapter = ProductRowAdapter { Nav.product(this, it.id) }
@@ -41,7 +43,9 @@ class MainActivity : AppCompatActivity() {
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
 
-        // RecyclerView ngang cho danh mục và món bán chạy, dọc cho món mới
+        // RecyclerView ngang cho quán, danh mục và món bán chạy, dọc cho món mới
+        b.rvStores.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        b.rvStores.adapter = storeAdapter
         b.rvCategories.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         b.rvCategories.adapter = categoryAdapter
         b.rvBestSeller.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -67,7 +71,7 @@ class MainActivity : AppCompatActivity() {
         b.btnChat.setOnClickListener {
             if (Session.isLoggedIn) ChatActivity.openForCustomer(this)
             else AlertDialog.Builder(this).setTitle("Cần đăng nhập")
-                .setMessage("Đăng nhập để chat trực tuyến với cửa hàng và xem lại lịch sử tin nhắn.")
+                .setMessage("Đăng nhập để chat với bộ phận hỗ trợ khách hàng và xem lại lịch sử tin nhắn.")
                 .setPositiveButton("Đăng nhập") { _, _ -> startActivity(Intent(this, LoginActivity::class.java)) }
                 .setNegativeButton("Để sau", null).show()
         }
@@ -137,6 +141,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadData() {
         b.swipe.isRefreshing = true
+        api({ stores() }, onError = {}) { storeAdapter.submit(it) }
         api({ categories() }, onError = { b.swipe.isRefreshing = false; showError(it) }) {
             categoryAdapter.submit(it)
         }

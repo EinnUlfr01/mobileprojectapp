@@ -23,12 +23,16 @@ object Session {
     val isLoggedIn: Boolean get() = !token.isNullOrEmpty() && user != null
     val role: String? get() = if (isLoggedIn) user?.role else null
 
-    // Có vào trang quản trị không (Quản trị viên, Quản lý thực đơn, Nhân viên đơn hàng)
-    val isStaff: Boolean get() = role in listOf(Role.ADMIN, Role.MENU_MANAGER, Role.ORDER_STAFF)
-    val isAdmin: Boolean get() = role == Role.ADMIN
-    val canManageUsers: Boolean get() = role == Role.ADMIN
-    val canManageMenu: Boolean get() = role == Role.ADMIN || role == Role.MENU_MANAGER
-    val canManageOrders: Boolean get() = role == Role.ADMIN || role == Role.ORDER_STAFF
+    // Vai trò trên sàn
+    val isAdmin: Boolean get() = role == Role.ADMIN              // quản trị sàn (kiêm trả lời chat khách)
+    val isStoreOwner: Boolean get() = role == Role.STORE_OWNER   // chủ cửa hàng
+    val isShipper: Boolean get() = role == Role.SHIPPER
+    // Khách hàng (thành viên hoặc khách vãng lai): dùng màn mua hàng
+    val isCustomer: Boolean get() = !isAdmin && !isStoreOwner && !isShipper
+    // Nhân viên chăm sóc khách hàng trong chat = quản trị sàn
+    val isStaff: Boolean get() = isAdmin
+    // Vào trang quản trị (admin sàn hoặc chủ quán)
+    val isManager: Boolean get() = isAdmin || isStoreOwner
 
     // Khách vãng lai đã bấm "Tiếp tục với tư cách khách"
     var isGuest: Boolean
@@ -65,6 +69,10 @@ object GuestCart {
     private fun save(list: List<GuestCartItem>) {
         prefs.edit().putString("items", gson.toJson(list)).apply()
     }
+
+    // Giỏ đang chứa món của quán khác (mỗi đơn chỉ đặt 1 quán)
+    fun otherStoreName(storeId: Int): String? =
+        items().firstOrNull { it.storeId != 0 && it.storeId != storeId }?.let { it.storeName ?: "quán khác" }
 
     fun add(item: GuestCartItem) {
         val list = items()

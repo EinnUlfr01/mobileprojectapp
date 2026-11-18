@@ -75,12 +75,15 @@ class OrderListAdapter(private val showReceiver: Boolean = false) : BaseAdapter(
         val color = when (o.status) {
             OrderStatus.CANCELLED -> R.color.danger
             OrderStatus.DONE -> R.color.primary_dark
+            OrderStatus.PREPARING, OrderStatus.SHIPPING -> R.color.primary
             else -> R.color.star
         }
         b.tvStatus.setTextColor(parent.context.getColor(color))
         val who = if (showReceiver) "${o.receiverName}${if (o.isGuest) " (khách vãng lai)" else ""} · " else ""
         val paid = if (o.paymentMethod != "Tiền mặt") (if (o.isPaid) " (đã TT)" else " (chưa TT)") else ""
-        b.tvSub.text = "$who${o.createdAt.toDisplayDate()} · ${o.itemCount} món · ${o.paymentMethod}$paid"
+        val store = o.storeName?.let { "🏪 $it\n" } ?: ""
+        val shipper = if (showReceiver) o.shipperName?.let { " · Shipper: $it" } ?: "" else ""
+        b.tvSub.text = "$store$who${o.createdAt.toDisplayDate()} · ${o.itemCount} món · ${o.paymentMethod}$paid$shipper"
         b.tvTotal.text = o.total.toMoney()
         return b.root
     }

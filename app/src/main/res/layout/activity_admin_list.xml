@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Màn danh sách quản trị dùng chung: Quản lý cửa hàng, Quản lý shipper (ListView + nút Thêm) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fitsSystemWindows="true" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" style="@style/Toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <SearchView android:id="@+id/searchView" android:layout_width="match_parent" android:layout_height="48dp"
+        android:layout_margin="12dp" android:background="@drawable/bg_card" android:iconifiedByDefault="false" />
+    <TextView android:id="@+id/tvSummary" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingBottom="6dp" />
+    <TextView android:id="@+id/tvEmpty" style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:padding="24dp" android:text="Chưa có dữ liệu" android:visibility="gone" />
+    <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+        <ListView android:id="@+id/listView" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:clipToPadding="false" android:divider="@null" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingBottom="88dp" />
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton android:id="@+id/fab"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end" android:layout_margin="16dp" android:text="Thêm" app:icon="@drawable/ic_add" />
+    </FrameLayout>
+</LinearLayout>

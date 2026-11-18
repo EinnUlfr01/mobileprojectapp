@@ -102,13 +102,15 @@ class OrderDetailActivity : AppCompatActivity() {
         api({ cancelOrder(orderId, CancelRequest(reason)) }) { toast(it.message ?: "Đã hủy"); load() }
     }
 
-    // Dòng thời gian theo dõi đơn: Đã đặt → Đang giao → Giao thành công (hoặc Đã đặt → Đã hủy)
+    // Dòng thời gian theo dõi đơn: Đã đặt → Quán chuẩn bị → Shipper giao → Giao thành công (hoặc Đã đặt → Đã hủy)
     private fun buildTimeline(o: OrderDto) {
         header.llTimeline.removeAllViews()
         val history = o.history.orEmpty()
         val cancelled = o.status == OrderStatus.CANCELLED
         val steps = if (cancelled) listOf(OrderStatus.PENDING to "Đã đặt hàng", OrderStatus.CANCELLED to "Đơn đã hủy")
-        else listOf(OrderStatus.PENDING to "Đã đặt hàng, chờ cửa hàng chuẩn bị", OrderStatus.SHIPPING to "Đang giao hàng",
+        else listOf(OrderStatus.PENDING to "Đã đặt hàng, chờ quán xác nhận",
+            OrderStatus.PREPARING to "Quán đang chuẩn bị món",
+            OrderStatus.SHIPPING to "Shipper đang giao hàng",
             OrderStatus.DONE to "Giao thành công")
         val current = steps.indexOfFirst { it.first == o.status }.coerceAtLeast(0)
         val green = getColor(R.color.primary)
@@ -145,7 +147,10 @@ class OrderDetailActivity : AppCompatActivity() {
             b.toolbar.title = "Đơn #${o.code}"
             header.tvStatus.text = o.status
             buildTimeline(o)
-            header.tvInfo.text = "Ngày đặt: ${o.createdAt.toDisplayDate()}\n" +
+            header.tvInfo.text = (o.storeName?.let { "Quán: $it" + (o.storeAddress?.let { a -> " · $a" } ?: "") + "\n" } ?: "") +
+                (o.shipperName?.let { "Shipper: $it · ${o.shipperPhone}" + (o.shipperPlate?.let { p -> " · $p" } ?: "") + "\n" }
+                    ?: if (o.status == OrderStatus.PREPARING) "Shipper: đang tìm shipper\n" else "") +
+                "Ngày đặt: ${o.createdAt.toDisplayDate()}\n" +
                 "Người nhận: ${o.receiverName} · ${o.phone}\n" +
                 "Địa chỉ: ${o.address}\n" +
                 (o.note?.let { "Ghi chú: $it\n" } ?: "") +
@@ -155,14 +160,14 @@ class OrderDetailActivity : AppCompatActivity() {
                 (if (o.discount > 0) "Mã ${o.voucherCode}: -${o.discount.toMoney()}\n" else "") +
                 "Tổng thanh toán: ${o.total.toMoney()}"
             // Chỉ chủ đơn đánh giá được, và chỉ khi đơn hoàn thành
-            val canReview = o.status == OrderStatus.DONE && !Session.isStaff
+            val canReview = o.status == OrderStatus.DONE && Session.isCustomer
             adapter.submit(o.items, canReview)
-            b.btnCancel.visibility = if (o.status == OrderStatus.PENDING && !Session.isStaff) View.VISIBLE else View.GONE
+            b.btnCancel.visibility = if (o.status == OrderStatus.PENDING && Session.isCustomer) View.VISIBLE else View.GONE
             // Đơn chưa trả tiền: cho thanh toán online bằng VNPay
-            val canPay = !Session.isStaff && !o.isPaid && o.status != OrderStatus.CANCELLED && o.status != OrderStatus.DONE
+            val canPay = Session.isCustomer && !o.isPaid && o.status != OrderStatus.CANCELLED && o.status != OrderStatus.DONE
             b.btnPay.visibility = if (canPay) View.VISIBLE else View.GONE
             b.btnPay.text = if (o.paymentMethod == QR_METHOD) "Thanh toán bằng mã QR" else "Thanh toán qua VNPay"
-            b.memberActions.visibility = if (!Session.isStaff) View.VISIBLE else View.GONE
+            b.memberActions.visibility = if (Session.isCustomer) View.VISIBLE else View.GONE
         }
     }
 

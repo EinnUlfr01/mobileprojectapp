@@ -1,3 +1,6 @@
+import java.io.File
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -51,3 +54,29 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 }
+// Mỗi lần bấm Run: tự nối cổng 5090 của máy ảo / điện thoại (cắm cáp) về API trên máy tính,
+// khỏi phải gõ "adb reverse tcp:5090 tcp:5090" bằng tay.
+val sdkDirForAdb: String = run {
+    val f = rootProject.file("local.properties")
+    val p = Properties()
+    if (f.exists()) f.inputStream().use { p.load(it) }
+    p.getProperty("sdk.dir") ?: System.getenv("ANDROID_HOME") ?: ""
+}
+val adbReverse = tasks.register("adbReverse") {
+    val sdkDir = sdkDirForAdb
+    notCompatibleWithConfigurationCache("Chạy lệnh adb trên máy")
+    doLast {
+        val exe = if (System.getProperty("os.name").lowercase().contains("win")) "adb.exe" else "adb"
+        val adb = File(sdkDir, "platform-tools/$exe")
+        if (!adb.exists()) return@doLast
+        fun sh(vararg args: String): String = try {
+            val p = ProcessBuilder(adb.path, *args).redirectErrorStream(true).start()
+            val out = p.inputStream.bufferedReader().readText()
+            p.waitFor(); out
+        } catch (e: Exception) { "" }
+        sh("devices").lines().drop(1).map { it.trim() }.filter { it.endsWith("device") }
+            .map { it.split(Regex("\\s+"))[0] }
+            .forEach { serial -> sh("-s", serial, "reverse", "tcp:5090", "tcp:5090"); println("adb reverse 5090 -> $serial") }
+    }
+}
+tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(adbReverse) }

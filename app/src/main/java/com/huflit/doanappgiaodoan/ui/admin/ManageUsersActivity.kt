@@ -21,7 +21,7 @@ import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import com.huflit.doanappgiaodoan.util.toast
 
-// Quản lý user (ListView): thêm, sửa, xóa, chuyển vai trò (Thành viên / Quản trị viên / Quản lý thực đơn / Nhân viên đơn hàng) bằng Dialog
+// Quản lý người dùng (ListView): thêm, sửa, xóa, đổi vai trò (Khách hàng / Quản trị sàn / Chủ cửa hàng / Shipper) bằng Dialog
 class ManageUsersActivity : AppCompatActivity() {
     private lateinit var b: ActivityManageUsersBinding
     private val roles = Role.ALL
@@ -63,7 +63,15 @@ class ManageUsersActivity : AppCompatActivity() {
             d.edtPhone.setText(user.phone)
             d.edtAddress.setText(user.defaultAddress ?: "")
             d.spRole.setSelection(roles.indexOf(user.role).coerceAtLeast(0))
+            d.edtPlate.setText(user.vehiclePlate ?: "")
         } else d.tilPassword.hint = "Mật khẩu (tối thiểu 6 ký tự)"
+        // Chọn vai trò Shipper thì hiện ô biển số xe
+        d.spRole.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                d.tilPlate.visibility = if (roles[pos] == Role.SHIPPER) View.VISIBLE else View.GONE
+            }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
 
         val dialog = AlertDialog.Builder(this)
             .setTitle(if (user == null) "Thêm người dùng" else "Sửa người dùng")
@@ -76,7 +84,8 @@ class ManageUsersActivity : AppCompatActivity() {
                     phone = d.edtPhone.text.toString().trim(),
                     password = d.edtPassword.text.toString().ifEmpty { null },
                     role = roles[d.spRole.selectedItemPosition],
-                    defaultAddress = d.edtAddress.text.toString().trim().ifEmpty { null }
+                    defaultAddress = d.edtAddress.text.toString().trim().ifEmpty { null },
+                    vehiclePlate = d.edtPlate.text.toString().trim().ifEmpty { null }
                 )
                 val onOk: (UserDto) -> Unit = { toast("Đã lưu"); dialog.dismiss(); load() }
                 if (user == null) api({ createUser(req) }, onSuccess = onOk)
@@ -109,8 +118,9 @@ class UserAdapter(
         val u = items[position]
         ImageLoader.load(b.img, b.imgText, null, u.fullName)
         b.tvTitle.text = u.fullName
-        b.tvSub.text = "${u.email} · ${u.phone}"
-        b.tvBadge.text = Role.label(u.role)
+        b.tvSub.text = "${u.email} · ${u.phone}" +
+            (u.storeName?.let { "\nQuán: $it" } ?: "") + (u.vehiclePlate?.let { "\nBiển số: $it" } ?: "")
+        b.tvBadge.text = if (u.isLocked) "Đã khóa" else Role.label(u.role)
         b.tvBadge.visibility = View.VISIBLE
         b.btnEdit.setOnClickListener { onEdit(u) }
         b.btnDelete.setOnClickListener { onDelete(u) }

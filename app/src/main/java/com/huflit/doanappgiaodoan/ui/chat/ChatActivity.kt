@@ -53,7 +53,7 @@ class ChatActivity : AppCompatActivity() {
         b = ActivityChatBinding.inflate(layoutInflater)
         setContentView(b.root)
         conversationId = intent.getIntExtra(EXTRA_CONVERSATION, 0)
-        setupToolbar(b.toolbar, intent.getStringExtra(EXTRA_TITLE) ?: "Chat với cửa hàng")
+        setupToolbar(b.toolbar, intent.getStringExtra(EXTRA_TITLE) ?: "Hỗ trợ khách hàng")
         b.toolbar.subtitle = defaultSubtitle
 
         // Tin "của mình": khách -> tin không phải của nhân viên; nhân viên -> tin của nhân viên
@@ -74,7 +74,7 @@ class ChatActivity : AppCompatActivity() {
     // Câu mẫu: nhân viên trả lời nhanh, khách hỏi nhanh
     private fun setupQuickReplies() {
         val quick = if (isStaffView) listOf(
-            "Dạ cửa hàng đã nhận đơn của bạn ạ",
+            "Dạ em đã nhắn quán xử lý đơn của bạn ạ",
             "Món đang được chuẩn bị, khoảng 15 phút nữa giao ạ",
             "Shipper đang trên đường giao tới bạn ạ",
             "Dạ món này hôm nay tạm hết, bạn đổi món khác giúp quán nhé",
@@ -107,7 +107,7 @@ class ChatActivity : AppCompatActivity() {
     private val onTyping: (Int, Boolean) -> Unit = { convId, fromStaff ->
         val fromOtherSide = fromStaff != isStaffView
         if (fromOtherSide && (!isStaffView || convId == conversationId)) {
-            b.toolbar.subtitle = if (isStaffView) "Khách đang nhập…" else "Cửa hàng đang nhập…"
+            b.toolbar.subtitle = if (isStaffView) "Khách đang nhập…" else "Hỗ trợ viên đang nhập…"
             handler.removeCallbacks(clearTyping)
             handler.postDelayed(clearTyping, 3000)
         }

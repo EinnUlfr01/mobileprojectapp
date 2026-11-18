@@ -6,130 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FoodOrder.API.Controllers;
 
-// Danh mục quán ăn: ai cũng xem được, admin mới thêm/sửa/xóa
-[ApiController]
-[Route("api/store-categories")]
-public class StoreCategoriesController(AppDbContext db) : ControllerBase
-{
-    [HttpGet]
-    public async Task<List<StoreCategoryDto>> GetAll() =>
-        await db.StoreCategories.OrderBy(c => c.Id)
-            .Select(c => new StoreCategoryDto(c.Id, c.Name, c.ImageUrl, c.Stores.Count))
-            .ToListAsync();
-
-    [HttpPost, Authorize(Roles = Roles.MenuManagers)]
-    public async Task<ActionResult<StoreCategoryDto>> Create(StoreCategoryRequest r)
-    {
-        if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên danh mục quán"));
-        var sc = new StoreCategory { Name = r.Name.Trim(), ImageUrl = r.ImageUrl };
-        db.StoreCategories.Add(sc);
-        await db.SaveChangesAsync();
-        return new StoreCategoryDto(sc.Id, sc.Name, sc.ImageUrl, 0);
-    }
-
-    [HttpPut("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
-    public async Task<ActionResult<MessageDto>> Update(int id, StoreCategoryRequest r)
-    {
-        var sc = await db.StoreCategories.FindAsync(id);
-        if (sc == null) return NotFound(new MessageDto("Không tìm thấy danh mục quán"));
-        if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên danh mục quán"));
-        sc.Name = r.Name.Trim();
-        sc.ImageUrl = r.ImageUrl;
-        await db.SaveChangesAsync();
-        return new MessageDto("Đã cập nhật");
-    }
-
-    [HttpDelete("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
-    public async Task<ActionResult<MessageDto>> Delete(int id)
-    {
-        var sc = await db.StoreCategories.FindAsync(id);
-        if (sc == null) return NotFound(new MessageDto("Không tìm thấy danh mục quán"));
-        if (await db.Stores.AnyAsync(s => s.StoreCategoryId == id))
-            return BadRequest(new MessageDto("Danh mục còn quán ăn, hãy xóa hoặc chuyển quán trước"));
-        db.StoreCategories.Remove(sc);
-        await db.SaveChangesAsync();
-        return new MessageDto("Đã xóa");
-    }
-}
-
-// Quán ăn: ai cũng xem được, admin mới thêm/sửa/xóa
-[ApiController]
-[Route("api/stores")]
-public class StoresController(AppDbContext db) : ControllerBase
-{
-    [HttpGet]
-    public async Task<List<StoreDto>> GetAll(int? storeCategoryId, string? q, string? sort, int? take)
-    {
-        var query = db.Stores.Include(s => s.StoreCategory).Include(s => s.Products).AsQueryable();
-        if (storeCategoryId.HasValue) query = query.Where(s => s.StoreCategoryId == storeCategoryId);
-        if (!string.IsNullOrWhiteSpace(q)) query = query.Where(s => s.Name.Contains(q.Trim()));
-        query = sort switch
-        {
-            "rating" => query.OrderByDescending(s => s.Rating),
-            "bestseller" => query.OrderByDescending(s => s.SoldCount),
-            "new" => query.OrderByDescending(s => s.CreatedAt).ThenByDescending(s => s.Id),
-            _ => query.OrderBy(s => s.Id)
-        };
-        if (take is > 0) query = query.Take(take.Value);
-        var list = await query.ToListAsync();
-        return list.Select(s => s.ToDto()).ToList();
-    }
-
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<StoreDetailDto>> Get(int id)
-    {
-        var store = await db.Stores.Include(s => s.StoreCategory).Include(s => s.Products).FirstOrDefaultAsync(s => s.Id == id);
-        if (store == null) return NotFound(new MessageDto("Không tìm thấy quán ăn"));
-        var products = await db.Products.Include(p => p.Category).Include(p => p.Store).Include(p => p.Sizes)
-            .Where(p => p.StoreId == id).OrderBy(p => p.Id).ToListAsync();
-        return new StoreDetailDto(store.ToDto(), products.Select(p => p.ToDto()).ToList());
-    }
-
-    [HttpPost, Authorize(Roles = Roles.MenuManagers)]
-    public async Task<ActionResult<StoreDto>> Create(StoreRequest r)
-    {
-        if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên quán ăn"));
-        if (!await db.StoreCategories.AnyAsync(c => c.Id == r.StoreCategoryId)) return BadRequest(new MessageDto("Danh mục quán không tồn tại"));
-        var store = new Store
-        {
-            StoreCategoryId = r.StoreCategoryId, Name = r.Name.Trim(), Description = r.Description,
-            ImageUrl = r.ImageUrl, Address = r.Address, Phone = r.Phone
-        };
-        db.Stores.Add(store);
-        await db.SaveChangesAsync();
-        await db.Entry(store).Reference(x => x.StoreCategory).LoadAsync();
-        return store.ToDto();
-    }
-
-    [HttpPut("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
-    public async Task<ActionResult<StoreDto>> Update(int id, StoreRequest r)
-    {
-        var store = await db.Stores.Include(s => s.StoreCategory).Include(s => s.Products).FirstOrDefaultAsync(s => s.Id == id);
-        if (store == null) return NotFound(new MessageDto("Không tìm thấy quán ăn"));
-        if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên quán ăn"));
-        if (!await db.StoreCategories.AnyAsync(c => c.Id == r.StoreCategoryId)) return BadRequest(new MessageDto("Danh mục quán không tồn tại"));
-        store.StoreCategoryId = r.StoreCategoryId;
-        store.Name = r.Name.Trim();
-        store.Description = r.Description;
-        store.ImageUrl = r.ImageUrl;
-        store.Address = r.Address;
-        store.Phone = r.Phone;
-        await db.SaveChangesAsync();
-        return store.ToDto();
-    }
-
-    [HttpDelete("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
-    public async Task<ActionResult<MessageDto>> Delete(int id)
-    {
-        var store = await db.Stores.FindAsync(id);
-        if (store == null) return NotFound(new MessageDto("Không tìm thấy quán ăn"));
-        db.Stores.Remove(store);
-        await db.SaveChangesAsync();
-        return new MessageDto("Đã xóa");
-    }
-}
-
-// Danh mục: ai cũng xem được, admin mới thêm/sửa/xóa
+// Danh mục món dùng chung cho cả sàn: ai cũng xem được, quản trị sàn mới thêm/sửa/xóa
 [ApiController]
 [Route("api/categories")]
 public class CategoriesController(AppDbContext db) : ControllerBase
@@ -140,7 +17,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
             .Select(c => new CategoryDto(c.Id, c.Name, c.ImageUrl, c.Products.Count))
             .ToListAsync();
 
-    [HttpPost, Authorize(Roles = Roles.MenuManagers)]
+    [HttpPost, Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<CategoryDto>> Create(CategoryRequest r)
     {
         if (string.IsNullOrWhiteSpace(r.Name)) return BadRequest(new MessageDto("Vui lòng nhập tên danh mục"));
@@ -150,7 +27,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         return new CategoryDto(c.Id, c.Name, c.ImageUrl, 0);
     }
 
-    [HttpPut("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
+    [HttpPut("{id:int}"), Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<MessageDto>> Update(int id, CategoryRequest r)
     {
         var c = await db.Categories.FindAsync(id);
@@ -162,7 +39,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         return new MessageDto("Đã cập nhật");
     }
 
-    [HttpDelete("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
+    [HttpDelete("{id:int}"), Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<MessageDto>> Delete(int id)
     {
         var c = await db.Categories.FindAsync(id);
@@ -179,16 +56,21 @@ public class CategoriesController(AppDbContext db) : ControllerBase
 [Route("api/products")]
 public class ProductsController(AppDbContext db) : ControllerBase
 {
-    // Trang chủ, tìm kiếm, món theo danh mục, món theo quán ăn
+    // Trang chủ, tìm kiếm, món theo danh mục, món của 1 quán
     // sort: bestseller | new | price_asc | price_desc
     [HttpGet]
-    public async Task<List<ProductDto>> GetAll(int? categoryId, int? storeId, string? q, string? sort, bool? isNew, int? take)
+    public async Task<List<ProductDto>> GetAll(int? categoryId, string? q, string? sort, bool? isNew, int? take, int? storeId)
     {
         var query = db.Products.Include(p => p.Category).Include(p => p.Store).Include(p => p.Sizes).AsQueryable();
-        if (categoryId.HasValue) query = query.Where(p => p.CategoryId == categoryId);
         if (storeId.HasValue) query = query.Where(p => p.StoreId == storeId);
+        else query = query.Where(p => p.Store!.IsActive); // quán bị sàn khóa thì ẩn món
+        if (categoryId.HasValue) query = query.Where(p => p.CategoryId == categoryId);
         if (isNew == true) query = query.Where(p => p.IsNew);
-        if (!string.IsNullOrWhiteSpace(q)) query = query.Where(p => p.Name.Contains(q.Trim()));
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var key = q.Trim();
+            query = query.Where(p => p.Name.Contains(key) || p.Store!.Name.Contains(key));
+        }
         query = sort switch
         {
             "bestseller" => query.OrderByDescending(p => p.SoldCount),
@@ -217,33 +99,40 @@ public class ProductsController(AppDbContext db) : ControllerBase
         return new ProductDetailDto(p.ToDto(), reviews, isFavorite);
     }
 
-    // AddEditProductActivity
-    [HttpPost, Authorize(Roles = Roles.MenuManagers)]
+    // AddEditProductActivity: quản trị sàn chọn quán, chủ quán chỉ thêm món cho quán của mình
+    [HttpPost, Authorize(Roles = Roles.AdminOrOwner)]
     public async Task<ActionResult<ProductDto>> Create(ProductRequest r)
     {
+        var (storeId, storeErr) = await ResolveStore(r.StoreId);
+        if (storeErr != null) return BadRequest(new MessageDto(storeErr));
         var err = await Validate(r);
         if (err != null) return BadRequest(new MessageDto(err));
         var p = new Product
         {
-            CategoryId = r.CategoryId, StoreId = r.StoreId, Name = r.Name.Trim(), Description = r.Description, ImageUrl = r.ImageUrl, IsNew = r.IsNew,
+            CategoryId = r.CategoryId, StoreId = storeId, Name = r.Name.Trim(), Description = r.Description, ImageUrl = r.ImageUrl, IsNew = r.IsNew,
             Sizes = r.Sizes.Select(s => new ProductSize { Size = s.Size, Price = s.Price }).ToList()
         };
         db.Products.Add(p);
         await db.SaveChangesAsync();
         await db.Entry(p).Reference(x => x.Category).LoadAsync();
-        if (p.StoreId.HasValue) await db.Entry(p).Reference(x => x.Store).LoadAsync();
+        await db.Entry(p).Reference(x => x.Store).LoadAsync();
         return p.ToDto();
     }
 
-    [HttpPut("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
+    [HttpPut("{id:int}"), Authorize(Roles = Roles.AdminOrOwner)]
     public async Task<ActionResult<ProductDto>> Update(int id, ProductRequest r)
     {
-        var p = await db.Products.Include(x => x.Sizes).Include(x => x.Category).Include(x => x.Store).FirstOrDefaultAsync(x => x.Id == id);
+        var p = await db.Products.Include(x => x.Sizes).Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id);
         if (p == null) return NotFound(new MessageDto("Không tìm thấy món"));
+        if (!await CanEdit(p)) return Forbid();
         var err = await Validate(r);
         if (err != null) return BadRequest(new MessageDto(err));
+        if (User.IsInRole(Roles.Admin) && r.StoreId is int newStore && newStore != p.StoreId)
+        {
+            if (!await db.Stores.AnyAsync(s => s.Id == newStore)) return BadRequest(new MessageDto("Cửa hàng không tồn tại"));
+            p.StoreId = newStore;
+        }
         p.CategoryId = r.CategoryId;
-        p.StoreId = r.StoreId;
         p.Name = r.Name.Trim();
         p.Description = r.Description;
         p.ImageUrl = r.ImageUrl;
@@ -252,15 +141,16 @@ public class ProductsController(AppDbContext db) : ControllerBase
         p.Sizes = r.Sizes.Select(s => new ProductSize { Size = s.Size, Price = s.Price }).ToList();
         await db.SaveChangesAsync();
         await db.Entry(p).Reference(x => x.Category).LoadAsync();
-        if (p.StoreId.HasValue) await db.Entry(p).Reference(x => x.Store).LoadAsync();
+        await db.Entry(p).Reference(x => x.Store).LoadAsync();
         return p.ToDto();
     }
 
-    [HttpDelete("{id:int}"), Authorize(Roles = Roles.MenuManagers)]
+    [HttpDelete("{id:int}"), Authorize(Roles = Roles.AdminOrOwner)]
     public async Task<ActionResult<MessageDto>> Delete(int id)
     {
         var p = await db.Products.FindAsync(id);
         if (p == null) return NotFound(new MessageDto("Không tìm thấy món"));
+        if (!await CanEdit(p)) return Forbid();
         if (await db.OrderItems.AnyAsync(i => i.ProductId == id))
             return BadRequest(new MessageDto("Món đã có trong đơn hàng nên không xóa được"));
         db.Products.Remove(p);
@@ -268,11 +158,30 @@ public class ProductsController(AppDbContext db) : ControllerBase
         return new MessageDto("Đã xóa");
     }
 
+    // Chủ quán: luôn là quán của mình. Quản trị sàn: quán được chọn trong form.
+    private async Task<(int StoreId, string? Error)> ResolveStore(int? requested)
+    {
+        if (User.IsInRole(Roles.Admin))
+        {
+            if (requested == null) return (0, "Vui lòng chọn cửa hàng");
+            return await db.Stores.AnyAsync(s => s.Id == requested) ? (requested.Value, null) : (0, "Cửa hàng không tồn tại");
+        }
+        var uid = User.UserId();
+        var mine = await db.Stores.Where(s => s.OwnerId == uid).Select(s => (int?)s.Id).FirstOrDefaultAsync();
+        return mine == null ? (0, "Tài khoản chưa được gán cửa hàng, liên hệ quản trị sàn") : (mine.Value, null);
+    }
+
+    private async Task<bool> CanEdit(Product p)
+    {
+        if (User.IsInRole(Roles.Admin)) return true;
+        var uid = User.UserId();
+        return await db.Stores.AnyAsync(s => s.Id == p.StoreId && s.OwnerId == uid);
+    }
+
     private async Task<string?> Validate(ProductRequest r)
     {
         if (string.IsNullOrWhiteSpace(r.Name)) return "Vui lòng nhập tên món";
-        if (!await db.Categories.AnyAsync(c => c.Id == r.CategoryId)) return "Danh mục món không tồn tại";
-        if (r.StoreId.HasValue && !await db.Stores.AnyAsync(s => s.Id == r.StoreId.Value)) return "Quán ăn không tồn tại";
+        if (!await db.Categories.AnyAsync(c => c.Id == r.CategoryId)) return "Danh mục không tồn tại";
         if (r.Sizes == null || r.Sizes.Count == 0) return "Cần ít nhất 1 size có giá";
         if (r.Sizes.Any(s => s.Price <= 0)) return "Giá phải lớn hơn 0";
         if (r.Sizes.Select(s => s.Size).Distinct().Count() != r.Sizes.Count) return "Size bị trùng";

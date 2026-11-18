@@ -7,7 +7,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import com.huflit.doanappgiaodoan.data.CategoryDto
 import com.huflit.doanappgiaodoan.data.ProductRequest
+import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.data.SizeDto
+import com.huflit.doanappgiaodoan.data.StoreDto
 import com.huflit.doanappgiaodoan.databinding.ActivityAddEditProductBinding
 import com.huflit.doanappgiaodoan.ui.Nav
 import com.huflit.doanappgiaodoan.util.ImageLoader
@@ -16,8 +18,12 @@ import com.huflit.doanappgiaodoan.util.api
 import com.huflit.doanappgiaodoan.util.setupToolbar
 import com.huflit.doanappgiaodoan.util.toast
 
-// Thêm / sửa món: tên, mô tả, ảnh (link), danh mục, giá từng size
+// Thêm / sửa món: tên, mô tả, ảnh (link), danh mục, giá từng size.
+// Quản trị sàn chọn thêm quán bán món; chủ quán thì món luôn thuộc quán của mình.
 class AddEditProductActivity : AppCompatActivity() {
+    companion object { const val EXTRA_STORE_ID = "storeId" }
+    private var storeList: List<StoreDto> = emptyList()
+    private var pendingStoreId: Int? = null
     private lateinit var b: ActivityAddEditProductBinding
     private var productId = 0
     private var catList: List<CategoryDto> = emptyList()
@@ -49,6 +55,15 @@ class AddEditProductActivity : AppCompatActivity() {
         b.btnPickImage.setOnClickListener { pickImage.launch("image/*") }
         previewImage()
 
+        if (Session.isAdmin) {
+            b.storeBox.visibility = android.view.View.VISIBLE
+            pendingStoreId = intent.getIntExtra(EXTRA_STORE_ID, 0).takeIf { it > 0 }
+            api({ allStores() }) { list ->
+                storeList = list
+                b.spStore.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, list.map { it.name })
+                selectStore()
+            }
+        }
         api({ categories() }) { list ->
             catList = list
             b.spCategory.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, list.map { it.name })
@@ -67,6 +82,8 @@ class AddEditProductActivity : AppCompatActivity() {
                 }
                 pendingCategoryId = p.categoryId
                 selectCategory()
+                pendingStoreId = p.storeId
+                selectStore()
             }
         }
     }
@@ -75,6 +92,12 @@ class AddEditProductActivity : AppCompatActivity() {
         val id = pendingCategoryId ?: return
         val idx = catList.indexOfFirst { it.id == id }
         if (idx >= 0) b.spCategory.setSelection(idx)
+    }
+
+    private fun selectStore() {
+        val id = pendingStoreId ?: return
+        val idx = storeList.indexOfFirst { it.id == id }
+        if (idx >= 0) b.spStore.setSelection(idx)
     }
 
     private fun previewImage() {
@@ -92,6 +115,7 @@ class AddEditProductActivity : AppCompatActivity() {
             edt.text.toString().toDoubleOrNull()?.takeIf { it > 0 }?.let { SizeDto(size, it) }
         }
         if (sizes.isEmpty()) { toast("Nhập giá cho ít nhất 1 size"); return }
+        if (Session.isAdmin && storeList.isEmpty()) { toast("Chưa có cửa hàng, hãy tạo cửa hàng trước"); return }
 
         val req = ProductRequest(
             categoryId = catList[b.spCategory.selectedItemPosition].id,
@@ -99,7 +123,8 @@ class AddEditProductActivity : AppCompatActivity() {
             description = b.edtDesc.text.toString().trim().ifEmpty { null },
             imageUrl = b.edtImage.text.toString().trim().ifEmpty { null },
             isNew = b.cbNew.isChecked,
-            sizes = sizes
+            sizes = sizes,
+            storeId = if (Session.isAdmin) storeList[b.spStore.selectedItemPosition].id else null
         )
         b.btnSave.isEnabled = false
         val onErr: (String) -> Unit = { b.btnSave.isEnabled = true; toast(it) }

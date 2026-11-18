@@ -10,12 +10,28 @@ namespace FoodOrder.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-// Mọi vai trò quản trị vào được; từng chức năng giới hạn thêm bên dưới
-[Authorize(Roles = Roles.AllStaff)]
+// Quản trị sàn (Admin) và Chủ cửa hàng (StoreOwner) dùng chung các API này.
+// Admin thấy toàn sàn; chủ quán chỉ thấy đơn, món, thống kê của quán mình.
+[Authorize(Roles = Roles.AdminOrOwner)]
 public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : ControllerBase
 {
     // Giờ Việt Nam để tính "hôm nay", "tháng này"
     private static DateTime VnNow => DateTime.UtcNow.AddHours(7);
+
+    private bool IsAdmin => User.IsInRole(Roles.Admin);
+
+    // Quán của chủ quán đang đăng nhập (admin trả về null = mọi quán)
+    private async Task<Store?> MyStore() =>
+        IsAdmin ? null : await db.Stores.FirstOrDefaultAsync(s => s.OwnerId == User.UserId());
+
+    // Giới hạn đơn theo quán: admin xem hết, chủ quán chỉ xem đơn quán mình (chưa có quán thì không thấy gì)
+    private async Task<IQueryable<Order>> ScopedOrders()
+    {
+        if (IsAdmin) return db.Orders;
+        var store = await MyStore();
+        var storeId = store?.Id ?? -1;
+        return db.Orders.Where(o => o.StoreId == storeId);
+    }
 
     // AdminDashboardActivity
     [HttpGet("dashboard")]
@@ -23,12 +39,19 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     {
         var todayUtc = VnNow.Date.AddHours(-7);
         var monthUtc = new DateTime(VnNow.Year, VnNow.Month, 1).AddHours(-7);
+        var orders = await ScopedOrders();
+        var store = await MyStore();
+        var products = IsAdmin ? db.Products : db.Products.Where(p => p.StoreId == (store != null ? store.Id : -1));
         return new DashboardDto(
-            await db.Users.CountAsync(u => u.Role == Roles.User),
-            await db.Orders.CountAsync(o => o.CreatedAt >= todayUtc),
-            await db.Orders.Where(o => o.CreatedAt >= monthUtc && o.Status == OrderStatus.Done).SumAsync(o => (decimal?)o.Total) ?? 0,
-            await db.Products.CountAsync(),
-            await db.Orders.CountAsync(o => o.Status == OrderStatus.Pending));
+            IsAdmin ? await db.Users.CountAsync(u => u.Role == Roles.User)
+                    : await orders.Where(o => o.UserId != null).Select(o => o.UserId).Distinct().CountAsync(),
+            await orders.CountAsync(o => o.CreatedAt >= todayUtc),
+            await orders.Where(o => o.CreatedAt >= monthUtc && o.Status == OrderStatus.Done).SumAsync(o => (decimal?)o.Total) ?? 0,
+            await products.CountAsync(),
+            await orders.CountAsync(o => o.Status == OrderStatus.Pending),
+            IsAdmin ? await db.Stores.CountAsync() : 0,
+            IsAdmin ? await db.Users.CountAsync(u => u.Role == Roles.Shipper) : 0,
+            store?.Id, store?.Name, store?.IsOpen ?? false);
     }
 
     // ---------- ManageUserActivity ----------
@@ -40,7 +63,8 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         if (!string.IsNullOrWhiteSpace(q)) query = query.Where(u => u.FullName.Contains(q) || u.Email.Contains(q) || u.Phone.Contains(q));
         if (!string.IsNullOrWhiteSpace(role)) query = query.Where(u => u.Role == role);
         var list = await query.OrderBy(u => u.Id).ToListAsync();
-        return list.Select(u => u.ToDto()).ToList();
+        var stores = await db.Stores.Where(s => s.OwnerId != null).ToListAsync();
+        return list.Select(u => u.ToDto(stores.FirstOrDefault(s => s.OwnerId == u.Id))).ToList();
     }
 
     [HttpPost("users")]
@@ -50,7 +74,8 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         var err = await ValidateUser(r, null);
         if (err != null) return BadRequest(new MessageDto(err));
         if (string.IsNullOrEmpty(r.Password) || r.Password.Length < 6) return BadRequest(new MessageDto("Mật khẩu tối thiểu 6 ký tự"));
-        var u = new User { FullName = r.FullName.Trim(), Email = r.Email.Trim().ToLower(), Phone = r.Phone, Role = r.Role, DefaultAddress = r.DefaultAddress };
+        var u = new User { FullName = r.FullName.Trim(), Email = r.Email.Trim().ToLower(), Phone = r.Phone, Role = r.Role, DefaultAddress = r.DefaultAddress,
+            VehiclePlate = string.IsNullOrWhiteSpace(r.VehiclePlate) ? null : r.VehiclePlate.Trim().ToUpper() };
         u.PasswordHash = hasher.HashPassword(u, r.Password);
         db.Users.Add(u);
         await db.SaveChangesAsync();
@@ -66,11 +91,14 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         var err = await ValidateUser(r, id);
         if (err != null) return BadRequest(new MessageDto(err));
         if (u.Id == User.UserId() && r.Role != Roles.Admin) return BadRequest(new MessageDto("Không thể tự bỏ quyền admin của chính mình"));
+        if (u.Role == Roles.StoreOwner && r.Role != Roles.StoreOwner && await db.Stores.AnyAsync(s => s.OwnerId == id))
+            return BadRequest(new MessageDto("Tài khoản đang là chủ của một quán. Hãy đổi chủ quán trước khi đổi vai trò"));
         u.FullName = r.FullName.Trim();
         u.Email = r.Email.Trim().ToLower();
         u.Phone = r.Phone;
         u.Role = r.Role;
         u.DefaultAddress = r.DefaultAddress;
+        u.VehiclePlate = string.IsNullOrWhiteSpace(r.VehiclePlate) ? null : r.VehiclePlate.Trim().ToUpper();
         if (!string.IsNullOrEmpty(r.Password))
         {
             if (r.Password.Length < 6) return BadRequest(new MessageDto("Mật khẩu tối thiểu 6 ký tự"));
@@ -87,9 +115,46 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         if (id == User.UserId()) return BadRequest(new MessageDto("Không thể xóa chính mình"));
         var u = await db.Users.FindAsync(id);
         if (u == null) return NotFound(new MessageDto("Không tìm thấy user"));
-        db.Users.Remove(u); // đơn cũ của user vẫn giữ lại (UserId = null)
+        // Shipper đã giao đơn thì bỏ liên kết shipper khỏi đơn (khóa ngoại NoAction), đơn vẫn giữ lại
+        await db.Orders.Where(o => o.ShipperId == id).ExecuteUpdateAsync(x => x.SetProperty(o => o.ShipperId, (int?)null));
+        db.Users.Remove(u); // đơn cũ của user vẫn giữ lại (UserId = null), quán của chủ quán thành "chưa có chủ"
         await db.SaveChangesAsync();
         return new MessageDto("Đã xóa");
+    }
+
+    // Khóa / mở khóa tài khoản (shipper vi phạm, chủ quán ngừng hợp tác...)
+    [HttpPut("users/{id:int}/lock")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<MessageDto>> Lock(int id, LockRequest r)
+    {
+        if (id == User.UserId()) return BadRequest(new MessageDto("Không thể tự khóa chính mình"));
+        var u = await db.Users.FindAsync(id);
+        if (u == null) return NotFound(new MessageDto("Không tìm thấy user"));
+        u.IsLocked = r.IsLocked;
+        await db.SaveChangesAsync();
+        return new MessageDto(r.IsLocked ? $"Đã khóa {u.FullName}" : $"Đã mở khóa {u.FullName}");
+    }
+
+    // ---------- ManageShippersActivity ----------
+    [HttpGet("shippers")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<List<ShipperDto>> Shippers(string? q)
+    {
+        var todayUtc = VnNow.Date.AddHours(-7);
+        var query = db.Users.Where(u => u.Role == Roles.Shipper);
+        if (!string.IsNullOrWhiteSpace(q)) query = query.Where(u => u.FullName.Contains(q) || u.Phone.Contains(q) || (u.VehiclePlate != null && u.VehiclePlate.Contains(q)));
+        var list = await query.OrderBy(u => u.Id).ToListAsync();
+        var ids = list.Select(u => u.Id).ToList();
+        var orders = await db.Orders.Where(o => o.ShipperId != null && ids.Contains(o.ShipperId.Value))
+            .Select(o => new { ShipperId = o.ShipperId!.Value, o.Status, o.CreatedAt }).ToListAsync();
+        return list.Select(u =>
+        {
+            var mine = orders.Where(o => o.ShipperId == u.Id).ToList();
+            return new ShipperDto(u.Id, u.FullName, u.Email, u.Phone, u.VehiclePlate, u.IsLocked,
+                mine.Count(o => o.Status is OrderStatus.Preparing or OrderStatus.Shipping),
+                mine.Count(o => o.Status == OrderStatus.Done),
+                mine.Count(o => o.Status == OrderStatus.Done && o.CreatedAt >= todayUtc));
+        }).ToList();
     }
 
     private async Task<string?> ValidateUser(AdminUserRequest r, int? id)
@@ -105,12 +170,12 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
     }
 
     // ---------- ManageOrderActivity: tab Danh sách đơn ----------
-    // type: member | guest
+    // type: member | guest ; storeId: admin lọc theo quán
     [HttpGet("orders")]
-    [Authorize(Roles = Roles.OrderManagers)]
-    public async Task<List<OrderDto>> Orders(string? status, string? type)
+    public async Task<List<OrderDto>> Orders(string? status, string? type, int? storeId)
     {
-        var q = db.Orders.Include(o => o.Items).AsQueryable();
+        var q = (await ScopedOrders()).WithDetails();
+        if (storeId.HasValue && IsAdmin) q = q.Where(o => o.StoreId == storeId);
         if (!string.IsNullOrWhiteSpace(status)) q = q.Where(o => o.Status == status);
         if (type == "member") q = q.Where(o => o.UserId != null);
         if (type == "guest") q = q.Where(o => o.UserId == null);
@@ -118,60 +183,61 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         return list.Select(o => o.ToDto()).ToList();
     }
 
+    // Admin: chuyển sang trạng thái bất kỳ.
+    // Chủ quán: Nhận đơn (Đang xử lý -> Đang chuẩn bị) hoặc Hủy đơn khi chưa giao.
     [HttpPut("orders/{id:int}/status")]
-    [Authorize(Roles = Roles.OrderManagers)]
     public async Task<ActionResult<MessageDto>> UpdateStatus(int id, UpdateStatusRequest r)
     {
         if (!OrderStatus.All.Contains(r.Status)) return BadRequest(new MessageDto("Trạng thái không hợp lệ"));
-        var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id);
+        var o = await (await ScopedOrders()).WithDetails().FirstOrDefaultAsync(x => x.Id == id);
         if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
-
-        // Cộng/trừ số lượng đã bán khi đơn vào/ra trạng thái Hoàn thành
-        var wasDone = o.Status == OrderStatus.Done;
-        var isDone = r.Status == OrderStatus.Done;
-        if (wasDone != isDone)
+        if (!IsAdmin)
         {
-            var sign = isDone ? 1 : -1;
-            foreach (var it in o.Items)
-            {
-                var p = await db.Products.FindAsync(it.ProductId);
-                if (p != null) p.SoldCount = Math.Max(0, p.SoldCount + sign * it.Quantity);
-            }
+            var ok = (o.Status == OrderStatus.Pending && r.Status == OrderStatus.Preparing)
+                  || (r.Status == OrderStatus.Cancelled && o.Status is OrderStatus.Pending or OrderStatus.Preparing && o.ShipperId == null);
+            if (!ok) return BadRequest(new MessageDto(r.Status == OrderStatus.Cancelled
+                ? "Shipper đã nhận đơn nên quán không tự hủy được, hãy liên hệ quản trị sàn"
+                : "Quán chỉ nhận đơn hoặc hủy đơn; lấy món và giao hàng do shipper cập nhật"));
         }
-        var changed = o.Status != r.Status;
-        o.Status = r.Status;
-        if (isDone) o.IsPaid = true;
-        var note = string.IsNullOrWhiteSpace(r.Note) ? null : r.Note.Trim();
-        if (note?.Length > 300) note = note[..300];
-        if (r.Status == OrderStatus.Cancelled) o.CancelReason = note ?? "Cửa hàng hủy đơn";
-        if (changed)
-        {
-            // Ghi lịch sử để khách theo dõi đơn theo dòng thời gian
-            var staff = await db.Users.FindAsync(User.UserId());
-            db.OrderStatusLogs.Add(new OrderStatusLog { OrderId = o.Id, Status = r.Status, Note = note, ChangedBy = staff?.FullName ?? "Cửa hàng" });
-        }
-        // Báo cho khách thành viên (khách vãng lai không có tài khoản nên quán gọi điện)
-        if (changed && o.UserId != null)
-        {
-            var body = r.Status switch
-            {
-                OrderStatus.Shipping => "Shipper đang trên đường giao món tới bạn.",
-                OrderStatus.Done => "Chúc bạn ngon miệng! Hãy đánh giá món để cửa hàng phục vụ tốt hơn.",
-                OrderStatus.Cancelled => $"Đơn đã bị hủy: {o.CancelReason}. Liên hệ cửa hàng qua mục Chat nếu cần hỗ trợ.",
-                _ => "Cửa hàng đang chuẩn bị món của bạn."
-            };
-            NotificationsController.Add(db, o.UserId.Value, $"Đơn #{o.Code}: {r.Status}", body, o.Id);
-        }
+        var me = await db.Users.FindAsync(User.UserId());
+        var by = IsAdmin ? (me?.FullName ?? "Quản trị sàn") : (o.Store?.Name ?? me?.FullName ?? "Quán");
+        var note = r.Note;
+        if (r.Status == OrderStatus.Preparing && string.IsNullOrWhiteSpace(note)) note = "Quán đã nhận đơn, đang chuẩn bị món";
+        if (r.Status == OrderStatus.Cancelled && string.IsNullOrWhiteSpace(note)) note = IsAdmin ? "Sàn hủy đơn" : "Quán hủy đơn";
+        await OrderFlow.ChangeStatusAsync(db, o, r.Status, note, by);
         await db.SaveChangesAsync();
         return new MessageDto("Đã cập nhật trạng thái");
     }
 
+    // Quản trị sàn gán (hoặc bỏ gán) shipper cho đơn
+    [HttpPut("orders/{id:int}/shipper")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<MessageDto>> AssignShipper(int id, AssignShipperRequest r)
+    {
+        var o = await db.Orders.Include(x => x.Shipper).FirstOrDefaultAsync(x => x.Id == id);
+        if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
+        if (o.Status is OrderStatus.Done or OrderStatus.Cancelled) return BadRequest(new MessageDto("Đơn đã kết thúc"));
+        var me = await db.Users.FindAsync(User.UserId());
+        if (r.ShipperId == null)
+        {
+            o.ShipperId = null;
+            db.OrderStatusLogs.Add(new OrderStatusLog { OrderId = o.Id, Status = o.Status, Note = "Bỏ gán shipper", ChangedBy = me?.FullName ?? "Quản trị sàn" });
+            await db.SaveChangesAsync();
+            return new MessageDto("Đã bỏ gán shipper");
+        }
+        var shipper = await db.Users.FindAsync(r.ShipperId);
+        if (shipper == null || shipper.Role != Roles.Shipper) return BadRequest(new MessageDto("Shipper không tồn tại"));
+        if (shipper.IsLocked) return BadRequest(new MessageDto("Shipper đang bị khóa"));
+        OrderFlow.AssignShipper(db, o, shipper, me?.FullName ?? "Quản trị sàn");
+        await db.SaveChangesAsync();
+        return new MessageDto($"Đã giao đơn cho {shipper.FullName}");
+    }
+
     // Admin kiểm tra tài khoản ngân hàng thấy tiền về rồi thì bấm xác nhận
     [HttpPut("orders/{id:int}/confirm-paid")]
-    [Authorize(Roles = Roles.OrderManagers)]
     public async Task<ActionResult<MessageDto>> ConfirmPaid(int id)
     {
-        var o = await db.Orders.FindAsync(id);
+        var o = await (await ScopedOrders()).FirstOrDefaultAsync(x => x.Id == id);
         if (o == null) return NotFound(new MessageDto("Không tìm thấy đơn"));
         if (o.IsPaid) return BadRequest(new MessageDto("Đơn đã được thanh toán"));
         var staff = await db.Users.FindAsync(User.UserId());
@@ -180,23 +246,27 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
         return new MessageDto("Đã xác nhận nhận tiền");
     }
 
-    // App nhân viên hỏi định kỳ để bắn thông báo khi có đơn mới / tin nhắn mới
+    // App quản trị / chủ quán hỏi định kỳ để bắn thông báo khi có đơn mới / tin nhắn mới
     [HttpGet("alerts")]
-    public async Task<StaffAlertsDto> Alerts() => new(
-        await db.Orders.CountAsync(o => o.Status == OrderStatus.Pending),
-        await db.Orders.MaxAsync(o => (int?)o.Id) ?? 0,
-        await db.Conversations.SumAsync(c => (int?)c.UnreadByStaff) ?? 0);
+    public async Task<StaffAlertsDto> Alerts()
+    {
+        var orders = await ScopedOrders();
+        return new StaffAlertsDto(
+            await orders.CountAsync(o => o.Status == OrderStatus.Pending),
+            await orders.MaxAsync(o => (int?)o.Id) ?? 0,
+            IsAdmin ? await db.Conversations.SumAsync(c => (int?)c.UnreadByStaff) ?? 0 : 0);
+    }
 
     // ---------- ManageOrderActivity: tab Thống kê ----------
-    // groupBy: day | month | user | category ; from/to dạng yyyy-MM-dd (giờ VN). Chỉ tính đơn Hoàn thành.
+    // groupBy: day | month | user | category | store ; from/to dạng yyyy-MM-dd (giờ VN). Chỉ tính đơn Hoàn thành.
+    // Chủ quán chỉ thấy số liệu quán mình.
     [HttpGet("stats")]
-    [Authorize(Roles = Roles.OrderManagers)]
     public async Task<StatsDto> Stats(string groupBy = "day", DateTime? from = null, DateTime? to = null)
     {
         var fromVn = (from ?? VnNow.Date.AddDays(-29)).Date;
         var toVn = (to ?? VnNow.Date).Date.AddDays(1);
-        var orders = await db.Orders.Include(o => o.Items).ThenInclude(i => i.Product!).ThenInclude(p => p.Category)
-            .Include(o => o.User)
+        var orders = await (await ScopedOrders()).Include(o => o.Items).ThenInclude(i => i.Product!).ThenInclude(p => p.Category)
+            .Include(o => o.User).Include(o => o.Store)
             .Where(o => o.Status == OrderStatus.Done && o.CreatedAt >= fromVn.AddHours(-7) && o.CreatedAt < toVn.AddHours(-7))
             .ToListAsync();
 
@@ -215,6 +285,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
             {
                 "month" => o => (o.CreatedAt.AddHours(7).ToString("yyyyMM"), o.CreatedAt.AddHours(7).ToString("MM/yyyy")),
                 "user" => o => ("", o.User != null ? o.User.FullName : "Khách vãng lai"),
+                "store" => o => ("", o.Store != null ? o.Store.Name : "Không rõ quán"),
                 _ => o => (o.CreatedAt.AddHours(7).ToString("yyyyMMdd"), o.CreatedAt.AddHours(7).ToString("dd/MM"))
             };
             var grouped = orders.GroupBy(key).Select(g => new
@@ -222,7 +293,7 @@ public class AdminController(AppDbContext db, IPasswordHasher<User> hasher) : Co
                 g.Key.Sort,
                 Row = new StatRowDto(g.Key.Label, g.Count(), g.Sum(o => o.Items.Sum(i => i.Quantity)), g.Sum(o => o.Total))
             });
-            rows = groupBy == "user"
+            rows = groupBy is "user" or "store"
                 ? grouped.Select(x => x.Row).OrderByDescending(r => r.Revenue).ToList()
                 : grouped.OrderBy(x => x.Sort).Select(x => x.Row).ToList();
         }

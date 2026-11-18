@@ -70,6 +70,14 @@
         <com.google.android.material.textfield.TextInputEditText android:id="@+id/edtDesc"
             android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" />
     </com.google.android.material.textfield.TextInputLayout>
+            <!-- Chọn quán: chỉ quản trị sàn thấy (chủ quán luôn thêm món cho quán mình) -->
+            <LinearLayout android:id="@+id/storeBox" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:visibility="gone">
+                <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:text="Cửa hàng" />
+                <Spinner android:id="@+id/spStore" android:layout_width="match_parent" android:layout_height="48dp"
+                    android:background="@drawable/bg_card" />
+            </LinearLayout>
             <TextView style="@style/Muted" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="12dp" android:text="Danh mục" />
             <Spinner android:id="@+id/spCategory" android:layout_width="match_parent" android:layout_height="48dp"

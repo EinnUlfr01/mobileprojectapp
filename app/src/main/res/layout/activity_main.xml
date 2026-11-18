@@ -20,7 +20,7 @@
         </LinearLayout>
         <FrameLayout android:layout_width="48dp" android:layout_height="48dp">
             <ImageButton android:id="@+id/btnChat" android:layout_width="48dp" android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Chat với cửa hàng"
+                android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Chat với hỗ trợ khách hàng"
                 android:src="@drawable/ic_chat" />
             <TextView android:id="@+id/tvChatBadge" android:layout_width="wrap_content" android:layout_height="18dp"
                 android:layout_gravity="top|end" android:layout_marginTop="4dp" android:layout_marginEnd="2dp"
@@ -65,6 +65,13 @@
                     android:layout_marginTop="16dp" android:clipToPadding="false" android:overScrollMode="never" />
                 <LinearLayout android:id="@+id/bannerDots" android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="8dp" android:gravity="center" android:orientation="horizontal" />
+
+                <!-- Các quán trên sàn (RecyclerView ngang) -->
+                <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp" android:text="Quán ngon trên sàn" />
+                <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvStores"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp"
+                    android:clipToPadding="false" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="8dp" />
 
                 <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginStart="16dp" android:text="Danh mục" />

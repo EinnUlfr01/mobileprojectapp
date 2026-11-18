@@ -13,13 +13,12 @@ import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.huflit.doanappgiaodoan.MainActivity
 import com.huflit.doanappgiaodoan.R
 import com.huflit.doanappgiaodoan.data.ApiClient
 import com.huflit.doanappgiaodoan.data.Session
 import com.huflit.doanappgiaodoan.ui.Nav
-import com.huflit.doanappgiaodoan.ui.admin.AdminDashboardActivity
 import com.huflit.doanappgiaodoan.ui.admin.ManageOrdersActivity
+import com.huflit.doanappgiaodoan.ui.shipper.ShipperActivity
 import com.huflit.doanappgiaodoan.ui.chat.ChatActivity
 import com.huflit.doanappgiaodoan.ui.chat.ChatListActivity
 import com.huflit.doanappgiaodoan.ui.user.OrderDetailActivity
@@ -30,7 +29,8 @@ import kotlinx.coroutines.launch
 
 // Khi app đang mở, cứ 8 giây hỏi server 1 lần:
 // - Khách: có thông báo đơn hàng mới không, cửa hàng có trả lời tin nhắn không
-// - Nhân viên: có đơn mới không, khách có nhắn tin không
+// - Quản trị sàn / chủ quán: có đơn mới không, khách có nhắn tin không (chat chỉ quản trị sàn)
+// - Shipper: có đơn mới đang chờ shipper nhận không
 // Có thì hiện thông báo trên thanh thông báo của điện thoại.
 object AppPoller {
     private const val INTERVAL_MS = 8000L
@@ -55,7 +55,7 @@ object AppPoller {
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val ch = NotificationChannel(CHANNEL_ID, "Đơn hàng và tin nhắn", NotificationManager.IMPORTANCE_HIGH)
-            ch.description = "Trạng thái đơn hàng, thanh toán, tin nhắn từ cửa hàng"
+            ch.description = "Trạng thái đơn hàng, thanh toán, tin nhắn hỗ trợ"
             context.getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
         }
     }
@@ -83,7 +83,7 @@ object AppPoller {
             if (Session.isStaff)
                 show(CHAT_NOTIFICATION_ID, "Tin nhắn từ ${m.senderName}", m.content, Intent(app, ChatListActivity::class.java))
             else
-                show(CHAT_NOTIFICATION_ID, "Cửa hàng đã trả lời", m.content, Intent(app, ChatActivity::class.java))
+                show(CHAT_NOTIFICATION_ID, "Hỗ trợ khách hàng đã trả lời", m.content, Intent(app, ChatActivity::class.java))
         }
         onUpdate?.invoke()
     }
@@ -95,7 +95,11 @@ object AppPoller {
         busy = true
         scope.launch {
             try {
-                if (Session.isStaff) pollStaff() else pollCustomer()
+                when {
+                    Session.isManager -> pollStaff()
+                    Session.isShipper -> pollShipper()
+                    else -> pollCustomer()
+                }
                 onUpdate?.invoke()
             } catch (_: Exception) {
                 // mất mạng / server tắt: bỏ qua, lần sau thử lại
@@ -125,25 +129,34 @@ object AppPoller {
         val unread = api.chatUnread().count
         val lastChat = state.getInt(key("chat"), 0)
         if (unread > lastChat && !chatScreenOpen && !ChatRealtime.isConnected)
-            show(CHAT_NOTIFICATION_ID, "Cửa hàng đã trả lời", "Bạn có $unread tin nhắn mới", Intent(app, ChatActivity::class.java))
+            show(CHAT_NOTIFICATION_ID, "Hỗ trợ khách hàng đã trả lời", "Bạn có $unread tin nhắn mới", Intent(app, ChatActivity::class.java))
         state.edit().putInt(key("chat"), unread).apply()
     }
 
-    // ---------- Nhân viên ----------
+    // ---------- Quản trị sàn / chủ quán ----------
     private suspend fun pollStaff() {
         val a = ApiClient.api.staffAlerts()
-        if (Session.canManageOrders) {
-            val lastOrder = state.getInt(key("order"), -1)
-            if (lastOrder >= 0 && a.latestOrderId > lastOrder)
-                show(ORDER_NOTIFICATION_ID, "Có đơn hàng mới", "${a.pendingOrders} đơn đang chờ xử lý",
-                    Intent(app, ManageOrdersActivity::class.java))
-            state.edit().putInt(key("order"), a.latestOrderId).apply()
-        }
+        val lastOrder = state.getInt(key("order"), -1)
+        if (lastOrder >= 0 && a.latestOrderId > lastOrder)
+            show(ORDER_NOTIFICATION_ID, "Có đơn hàng mới", "${a.pendingOrders} đơn đang chờ quán xác nhận",
+                Intent(app, ManageOrdersActivity::class.java))
+        state.edit().putInt(key("order"), a.latestOrderId).apply()
+        if (!Session.isAdmin) return // chỉ quản trị sàn trả lời chat
         val lastChat = state.getInt(key("chat"), 0)
         if (a.chatUnread > lastChat && !chatScreenOpen && !ChatRealtime.isConnected)
             show(CHAT_NOTIFICATION_ID, "Tin nhắn mới từ khách hàng", "${a.chatUnread} tin chưa trả lời",
                 Intent(app, ChatListActivity::class.java))
         state.edit().putInt(key("chat"), a.chatUnread).apply()
+    }
+
+    // ---------- Shipper: báo khi có đơn mới chờ nhận ----------
+    private suspend fun pollShipper() {
+        val s = ApiClient.api.shipperSummary()
+        val last = state.getInt(key("job"), -1)
+        if (last >= 0 && s.latestAvailableId > last && s.available > 0)
+            show(ORDER_NOTIFICATION_ID, "Có đơn chờ giao", "${s.available} đơn đang chờ shipper nhận",
+                Intent(app, ShipperActivity::class.java))
+        if (s.latestAvailableId > 0 || last < 0) state.edit().putInt(key("job"), s.latestAvailableId).apply()
     }
 
     // ---------- Hiện thông báo ----------
@@ -152,7 +165,7 @@ object AppPoller {
             ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
         // Bấm thông báo: mở trang chủ đúng vai trò rồi mở màn chi tiết phía trên
-        val home = Intent(app, if (Session.isStaff) AdminDashboardActivity::class.java else MainActivity::class.java)
+        val home = Intent(app, Nav.homeClass())
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         val intents = if (target != null) arrayOf(home, target) else arrayOf(home)
         val pending = PendingIntent.getActivities(app, id, intents,

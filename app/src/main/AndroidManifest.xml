@@ -33,7 +33,6 @@
         <!-- B. Nhóm User (dùng chung cho khách vãng lai) -->
         <activity android:name=".MainActivity" />
         <activity android:name=".ui.user.SearchActivity" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.user.StoreDetailActivity" />
         <activity android:name=".ui.user.CategoryProductsActivity" />
         <activity android:name=".ui.user.ProductDetailActivity" />
         <activity android:name=".ui.user.CartActivity" />
@@ -43,6 +42,7 @@
         <activity android:name=".ui.user.QrPaymentActivity" />
         <activity android:name=".ui.user.NotificationsActivity" />
         <activity android:name=".ui.user.FavoritesActivity" />
+        <activity android:name=".ui.user.StoreActivity" />
 
         <!-- Chat trực tuyến (khách hàng và nhân viên dùng chung) -->
         <activity android:name=".ui.chat.ChatActivity" android:windowSoftInputMode="adjustResize" />
@@ -60,6 +60,12 @@
         <activity android:name=".ui.admin.AddEditProductActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.admin.ManageOrdersActivity" />
         <activity android:name=".ui.admin.ManageVouchersActivity" />
+        <activity android:name=".ui.admin.ManageStoresActivity" />
+        <activity android:name=".ui.admin.StoreEditActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.admin.ManageShippersActivity" />
+
+        <!-- Shipper -->
+        <activity android:name=".ui.shipper.ShipperActivity" />
     </application>
 
 </manifest>

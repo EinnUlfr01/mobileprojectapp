@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FoodOrder.API.Hubs;
 
 // Kênh realtime (SignalR): app giữ kết nối mở, server đẩy tin nhắn mới xuống ngay lập tức.
-// - Nhân viên (3 vai trò quản trị) vào nhóm "staff": nhận mọi tin khách gửi
+// - Quản trị sàn vào nhóm "staff": nhận mọi tin khách gửi
 // - Khách hàng vào nhóm "customer-{id}": nhận tin cửa hàng trả lời
 // Sự kiện server -> app: "message" (tin mới), "typing" (bên kia đang nhập)
 // Gửi tin vẫn qua API /api/chat (ChatController); app chỉ gọi hub để báo "đang nhập".

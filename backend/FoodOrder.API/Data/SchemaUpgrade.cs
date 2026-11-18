@@ -108,37 +108,95 @@ public static class SchemaUpgrade
         );
         END
         """,
+        // ================= Sàn nhiều cửa hàng + shipper =================
+        """
+        IF COL_LENGTH('NguoiDung', 'VehiclePlate') IS NULL
+            ALTER TABLE NguoiDung ADD VehiclePlate nvarchar(20) NULL;
+        """,
+        """
+        IF COL_LENGTH('NguoiDung', 'IsLocked') IS NULL
+            ALTER TABLE NguoiDung ADD IsLocked bit NOT NULL CONSTRAINT DF_NguoiDung_IsLocked DEFAULT 0;
+        """,
+        // Vai trò cũ -> vai trò mới: Quản lý thực đơn thành Chủ quán, Nhân viên đơn hàng thành Shipper
+        """
+        UPDATE NguoiDung SET Role = 'StoreOwner' WHERE Role = 'MenuManager';
+        UPDATE NguoiDung SET Role = 'Shipper' WHERE Role = 'OrderStaff';
+        """,
         """
         IF OBJECT_ID(N'DanhMucQuanAn', N'U') IS NULL
-        BEGIN
         CREATE TABLE DanhMucQuanAn (
             Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_DanhMucQuanAn PRIMARY KEY,
             Name nvarchar(200) NOT NULL,
             ImageUrl nvarchar(500) NULL
         );
-        END
         """,
         """
-        IF OBJECT_ID(N'QuanAn', N'U') IS NULL
+        IF OBJECT_ID(N'CuaHang', N'U') IS NULL
         BEGIN
-        CREATE TABLE QuanAn (
-            Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_QuanAn PRIMARY KEY,
-            StoreCategoryId int NOT NULL CONSTRAINT FK_QuanAn_DanhMucQuanAn_StoreCategoryId REFERENCES DanhMucQuanAn(Id) ON DELETE NO ACTION,
+        CREATE TABLE CuaHang (
+            Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_CuaHang PRIMARY KEY,
             Name nvarchar(200) NOT NULL,
-            Description nvarchar(1000) NULL,
-            ImageUrl nvarchar(500) NULL,
-            Address nvarchar(300) NULL,
-            Phone nvarchar(20) NULL,
-            Rating float NOT NULL DEFAULT 5.0,
-            SoldCount int NOT NULL DEFAULT 0,
+            Address nvarchar(300) NOT NULL,
+            Phone nvarchar(15) NOT NULL,
+            Description nvarchar(500) NULL,
+            ImageUrl nvarchar(max) NULL,
+            OwnerId int NULL CONSTRAINT FK_CuaHang_NguoiDung_OwnerId REFERENCES NguoiDung(Id) ON DELETE SET NULL,
+            IsOpen bit NOT NULL,
+            IsActive bit NOT NULL,
             CreatedAt datetime2 NOT NULL
         );
+        CREATE INDEX IX_CuaHang_OwnerId ON CuaHang(OwnerId);
         END
         """,
         """
+        IF COL_LENGTH('CuaHang', 'StoreCategoryId') IS NULL
+        BEGIN
+            ALTER TABLE CuaHang ADD StoreCategoryId int NULL
+                CONSTRAINT FK_CuaHang_DanhMucQuanAn_StoreCategoryId REFERENCES DanhMucQuanAn(Id) ON DELETE SET NULL;
+            EXEC(N'CREATE INDEX IX_CuaHang_StoreCategoryId ON CuaHang(StoreCategoryId)');
+        END
+        """,
+        // Database từng chạy bản thử nghiệm bảng QuanAn: bỏ cột SanPham.StoreId trỏ sang QuanAn để chuyển sang CuaHang
+        """
+        IF OBJECT_ID(N'FK_SanPham_QuanAn_StoreId', N'F') IS NOT NULL
+        BEGIN
+            ALTER TABLE SanPham DROP CONSTRAINT FK_SanPham_QuanAn_StoreId;
+            IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SanPham_StoreId' AND object_id = OBJECT_ID('SanPham'))
+                DROP INDEX IX_SanPham_StoreId ON SanPham;
+            ALTER TABLE SanPham DROP COLUMN StoreId;
+        END
+        """,
+        // Món cũ chưa thuộc quán nào: tạo 4 quán mẫu rồi chia món theo danh mục
+        $"""
         IF COL_LENGTH('SanPham', 'StoreId') IS NULL
         BEGIN
-            ALTER TABLE SanPham ADD StoreId int NULL CONSTRAINT FK_SanPham_QuanAn_StoreId REFERENCES QuanAn(Id) ON DELETE SET NULL;
+            IF NOT EXISTS (SELECT 1 FROM CuaHang)
+                INSERT INTO CuaHang (Name, Address, Phone, Description, ImageUrl, OwnerId, IsOpen, IsActive, CreatedAt) VALUES
+                {DbSeeder.StoresSql};
+            ALTER TABLE SanPham ADD StoreId int NULL;
+            EXEC(N'UPDATE p SET StoreId = s.Id FROM SanPham p JOIN DanhMuc c ON c.Id = p.CategoryId
+                   JOIN CuaHang s ON s.Name = CASE c.Name {DbSeeder.CategoryStoreCaseSql} END');
+            EXEC(N'UPDATE SanPham SET StoreId = (SELECT MIN(Id) FROM CuaHang) WHERE StoreId IS NULL');
+            EXEC(N'ALTER TABLE SanPham ALTER COLUMN StoreId int NOT NULL');
+            EXEC(N'ALTER TABLE SanPham ADD CONSTRAINT FK_SanPham_CuaHang_StoreId FOREIGN KEY (StoreId) REFERENCES CuaHang(Id)');
+            EXEC(N'CREATE INDEX IX_SanPham_StoreId ON SanPham(StoreId)');
+        END
+        """,
+        // Đơn cũ: gán quán theo món đầu tiên trong đơn
+        """
+        IF COL_LENGTH('DonHang', 'StoreId') IS NULL
+        BEGIN
+            ALTER TABLE DonHang ADD StoreId int NULL CONSTRAINT FK_DonHang_CuaHang_StoreId REFERENCES CuaHang(Id);
+            EXEC(N'UPDATE o SET StoreId = (SELECT TOP 1 p.StoreId FROM ChiTietDonHang i JOIN SanPham p ON p.Id = i.ProductId
+                   WHERE i.OrderId = o.Id ORDER BY i.Id) FROM DonHang o');
+            EXEC(N'CREATE INDEX IX_DonHang_StoreId ON DonHang(StoreId)');
+        END
+        """,
+        """
+        IF COL_LENGTH('DonHang', 'ShipperId') IS NULL
+        BEGIN
+            ALTER TABLE DonHang ADD ShipperId int NULL CONSTRAINT FK_DonHang_NguoiDung_ShipperId REFERENCES NguoiDung(Id);
+            EXEC(N'CREATE INDEX IX_DonHang_ShipperId ON DonHang(ShipperId)');
         END
         """
     };

@@ -28,12 +28,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<User>().Property(x => x.Email).HasMaxLength(200);
         b.Entity<User>().Property(x => x.Phone).HasMaxLength(15);
         b.Entity<User>().Property(x => x.Role).HasMaxLength(20);
+        b.Entity<User>().Property(x => x.VehiclePlate).HasMaxLength(20);
 
         b.Entity<StoreCategory>().ToTable("DanhMucQuanAn");
+        b.Entity<StoreCategory>().Property(x => x.Name).HasMaxLength(200);
+        b.Entity<StoreCategory>().Property(x => x.ImageUrl).HasMaxLength(500);
 
-        b.Entity<Store>().ToTable("QuanAn");
+        b.Entity<Store>().ToTable("CuaHang");
         b.Entity<Store>().HasOne(x => x.StoreCategory).WithMany(c => c.Stores)
-            .HasForeignKey(x => x.StoreCategoryId).OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(x => x.StoreCategoryId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<Store>().Property(x => x.Name).HasMaxLength(200);
+        b.Entity<Store>().Property(x => x.Address).HasMaxLength(300);
+        b.Entity<Store>().Property(x => x.Phone).HasMaxLength(15);
+        b.Entity<Store>().Property(x => x.Description).HasMaxLength(500);
+        b.Entity<Store>().HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.SetNull);
 
         b.Entity<Category>().ToTable("DanhMuc");
 
@@ -41,7 +49,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Product>().HasOne(x => x.Category).WithMany(c => c.Products)
             .HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<Product>().HasOne(x => x.Store).WithMany(s => s.Products)
-            .HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.SetNull);
+            .HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
 
         b.Entity<ProductSize>().ToTable("SanPhamSize");
         b.Entity<ProductSize>().Property(x => x.Price).HasPrecision(18, 0);
@@ -56,6 +64,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Order>().HasIndex(x => x.Code).IsUnique();
         b.Entity<Order>().Property(x => x.Code).HasMaxLength(30);
         b.Entity<Order>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
+        // SQL Server không cho 2 khóa ngoại cùng trỏ NguoiDung đều SET NULL, nên Shipper/Store dùng NoAction (xử lý trong code)
+        b.Entity<Order>().HasOne(x => x.Shipper).WithMany().HasForeignKey(x => x.ShipperId).OnDelete(DeleteBehavior.NoAction);
+        b.Entity<Order>().HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.NoAction);
         foreach (var p in new[] { nameof(Order.Subtotal), nameof(Order.ShippingFee), nameof(Order.Total) })
             b.Entity<Order>().Property(p).HasPrecision(18, 0);
 

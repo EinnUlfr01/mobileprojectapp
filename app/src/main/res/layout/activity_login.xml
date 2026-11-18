@@ -45,8 +45,8 @@
             android:layout_gravity="center_horizontal" android:gravity="center"
             android:text="Chưa có tài khoản? Đăng ký" android:textColor="@color/primary" android:textStyle="bold" />
 
-        <TextView style="@style/Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" android:gravity="center"
-            android:text="Tài khoản mẫu:\nuser@gmail.com / 123456 · admin@gmail.com / Admin@123\nmenu@gmail.com / Menu@123 · donhang@gmail.com / Donhang@123" />
+        <TextView android:id="@+id/tvDemo" style="@style/Muted" android:layout_width="match_parent" android:layout_height="48dp"
+            android:layout_marginTop="8dp" android:gravity="center"
+            android:text="Dùng tài khoản demo (khách, quản trị, chủ quán, shipper)" />
     </LinearLayout>
 </ScrollView>
